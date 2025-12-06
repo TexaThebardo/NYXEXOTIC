@@ -1,0 +1,2462 @@
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- NYX EXOTIC - OBSIDIAN UI (COMPLETO 2025 - TODO FUNCIONANDO)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
+
+local Window = Library:CreateWindow({
+    Title = "NYX EXOTIC",
+    Icon = 134356507686793,
+    Footer = "Versión: 0.4 ¡Beta! | Press M to open/close",
+    AutoShow = true,
+    ShowCustomCursor = false,
+    NotifySide = "Right"
+})
+
+local Tabs = {
+    Main      = Window:AddTab("Home", "layout-dashboard"),
+    Combat    = Window:AddTab("Combat", "crosshair"),
+    Visuals   = Window:AddTab("Visuals", "eye"),
+    Player    = Window:AddTab("Player", "user"),
+    ["Auto Farm"] = Window:AddTab("Auto Farm", "zap"),
+    Settings  = Window:AddTab("Settings", "settings")
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- MAIN TAB - INFORMACIÓN COMPLETA Y FUNCIONAL (2025 - FUNCIONA EN TODOS LOS EXECUTORS)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local PlayerInfo = Tabs.Main:AddLeftGroupbox("Player Info", "accessibility")
+local ServerInfo = Tabs.Main:AddRightGroupbox("Server Info", "server")
+local SystemInfo = Tabs.Main:AddRightGroupbox("System Info", "computer")
+
+-- === LABELS QUE SE ACTUALIZARÁN ===
+local UsernameLabel   = PlayerInfo:AddLabel("Username: " .. game.Players.LocalPlayer.Name)
+local DisplayLabel    = PlayerInfo:AddLabel("Display: @" .. game.Players.LocalPlayer.DisplayName)
+local UserIDLabel     = PlayerInfo:AddLabel("User ID: " .. game.Players.LocalPlayer.UserId)
+local PlaytimeLabel   = PlayerInfo:AddLabel("Playtime: 00:00")
+
+local GameLabel       = ServerInfo:AddLabel("Game: Loading...")
+local PlaceIDLabel    = ServerInfo:AddLabel("Place ID: " .. game.PlaceId)
+local JobIDLabel      = ServerInfo:AddLabel("Job ID: " .. (game.JobId == "" and "Private" or string.sub(game.JobId, 1, 12).."..."))
+local PlayersLabel    = ServerInfo:AddLabel("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
+local RegionLabel     = ServerInfo:AddLabel("Region: Unknown")
+
+local ExecutorLabel   = SystemInfo:AddLabel("Executor: Detecting...")
+local FPSLabel        = SystemInfo:AddLabel("FPS: --")
+local PingLabel       = SystemInfo:AddLabel("Ping: -- ms")
+local StatusLabel     = SystemInfo:AddLabel("Status: Loaded")
+
+-- === INFORMACIÓN ESTÁTICA INMEDIATA ===
+GameLabel:SetText("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
+
+-- === DETECCIÓN DE EXECUTOR 100% FUNCIONAL 2025 (NUNCA FALLA) ===
+spawn(function()
+    local exec = "Unknown"
+
+    -- Método 1: identifyexecutor (Fluxus, Delta, Codex, Solara, Comet, Wave, Trigon, etc.)
+    if identifyexecutor then
+        exec = identifyexecutor()
+    -- Método 2: getexecutorname (algunos exploits viejos)
+    elseif getexecutorname then
+        exec = getexecutorname()
+    -- Método 3: Variables globales específicas
+    elseif syn then
+        exec = "Synapse X"
+    elseif KRNL_LOADED then
+        exec = "Krnl"
+    elseif Fluxus then
+        exec = "Fluxus"
+    elseif is_solara then
+        exec = "Solara"
+    elseif gethui then
+        exec = "Delta / Codex / Electron"
+    elseif Drawing then
+        -- Detección avanzada para exploits modernos
+        pcall(function()
+            if not syn and not KRNL_LOADED and not Fluxus and not is_solara then
+                if getgc and getgc() then
+                    exec = "Wave / Trigon / Comet"
+                elseif secure_load then
+                    exec = "Electron"
+                end
+            end
+        end)
+    end
+
+    -- Último recurso: nombre del executor por título de ventana (funciona en casi todos)
+    pcall(function()
+        if exec == "Unknown" then
+            local title = game:GetService("CoreGui").RobloxGui.Title.Text
+            if string.find(title, "Fluxus") then exec = "Fluxus"
+            elseif string.find(title, "Delta") then exec = "Delta"
+            elseif string.find(title, "Codex") then exec = "Codex"
+            elseif string.find(title, "Solara") then exec = "Solara"
+            elseif string.find(title, "Krnl") then exec = "Krnl"
+            elseif string.find(title, "Electron") then exec = "Electron"
+            elseif string.find(title, "Wave") then exec = "Wave"
+            elseif string.find(title, "Trigon") then exec = "Trigon"
+            end
+        end
+    end)
+
+    -- Actualizar label
+    ExecutorLabel:SetText("Executor: " .. exec)
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- FPS DINÁMICO REAL (2025 - FUNCIONA EN FLUXUS, DELTA, SOLARA, CODEX, KRYPTON, ETC.)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+local RunService = game:GetService("RunService")
+local frameCount = 0
+local lastUpdate = tick()
+
+RunService.Heartbeat:Connect(function()
+    frameCount += 1
+    
+    if tick() - lastUpdate >= 1 then
+        local fps = math.floor(frameCount)
+        
+        -- Solo el número cambia de color, el texto "FPS:" queda normal
+        if fps >= 60 then
+            FPSLabel:SetText("FPS: <font color='#00ff00'>" .. fps .. "</font>")
+        elseif fps >= 40 then
+            FPSLabel:SetText("FPS: <font color='#ffff00'>" .. fps .. "</font>")
+        else
+            FPSLabel:SetText("FPS: <font color='#ff0000'>" .. fps .. "</font>")
+        end
+        
+        frameCount = 0
+        lastUpdate = tick()
+    end
+end)
+
+-- === 3. PING EN TIEMPO REAL ===
+coroutine.wrap(function()
+    while task.wait(1.5) do
+        local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+        
+        if ping <= 60 then
+            PingLabel:SetText("Ping: <font color='#00ff00'>" .. ping .. "</font> (ms)")
+        elseif ping <= 120 then
+            PingLabel:SetText("Ping: <font color='#ffff00'>" .. ping .. "</font> (ms)")
+        else
+            PingLabel:SetText("Ping: <font color='#ff0000'>" .. ping .. "</font> (ms)")
+        end
+    end
+end)()
+
+-- === 4. PLAYTIME (CONTADOR REAL) ===
+local startTime = tick()  -- Momento en que inyectaste el script
+
+coroutine.wrap(function()
+    while task.wait(1) do
+        local elapsed = tick() - startTime
+        local minutes = math.floor(elapsed / 60)
+        local seconds = math.floor(elapsed % 60)
+        
+        -- Solo los números en color según tiempo
+        if minutes >= 60 then
+            PlaytimeLabel:SetText("Playtime: <font color='#00ff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        elseif minutes >= 30 then
+            PlaytimeLabel:SetText("Playtime: <font color='#ffff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        elseif minutes >= 10 then
+            PlaytimeLabel:SetText("Playtime: <font color='#ff8800'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        else
+            PlaytimeLabel:SetText("Playtime: <font color='#ff0000'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        end
+    end
+end)()
+-- === 6. ACTUALIZAR JUGADORES EN SERVIDOR ===
+game.Players.PlayerAdded:Connect(function()
+    PlayersLabel:SetText("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
+end)
+game.Players.PlayerRemoving:Connect(function()
+    PlayersLabel:SetText("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
+end)
+
+-- === 7. REGIÓN (MEJOR MÉTODO DISPONIBLE) ===
+spawn(function()
+    local region = "Unknown"
+    pcall(function()
+        region = game:GetService("LocalizationService"):GetCountryRegionForPlayerAsync(game.Players.LocalPlayer)
+    end)
+    RegionLabel:SetText("Region: " .. (region or "Unknown"))
+end)
+
+-- === 8. STATUS BONITO EN VERDE ===
+StatusLabel:SetText("Status: 🟢 ¡Loaded successfully!")
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- PLAYER TAB - EXPLoITS
+-- ═══════════════════════════════════════════════════════════════════════════════════
+local ExploitsBox = Tabs.Player:AddRightGroupbox("Exploits & Fun")
+
+ExploitsBox:AddButton("Headless", function()
+    local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+    local head = char:FindFirstChild("Head")
+    if head then head.Transparency = 1 end
+    local face = head:FindFirstChild("face")
+    if face then face.Transparency = 1 end
+end)
+
+ExploitsBox:AddButton("Korblox", function()
+    local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+    local rFoot = char:FindFirstChild("RightFoot")
+    local rLower = char:FindFirstChild("RightLowerLeg")
+    local rUpper = char:FindFirstChild("RightUpperLeg")
+    if rFoot and rLower and rUpper then
+        rFoot.MeshId = "http://www.roblox.com/asset/?id=902942093"
+        rLower.MeshId = "http://www.roblox.com/asset/?id=902942093"
+        rUpper.MeshId = "http://www.roblox.com/asset/?id=902942096"
+        rUpper.TextureID = "http://roblox.com/asset/?id=902843398"
+        rFoot.Transparency = 1
+        rLower.Transparency = 1
+    end
+end)
+
+ExploitsBox:AddButton("Beast Mode V1", function()
+    local face = game.Players.LocalPlayer.Character:FindFirstChild("Head"):FindFirstChild("face")
+    if face then face.Texture = "rbxassetid://209712379" end
+end)
+
+ExploitsBox:AddButton("Beast Mode V2", function()
+    local face = game.Players.LocalPlayer.Character:FindFirstChild("Head"):FindFirstChild("face")
+    if face then face.Texture = "rbxassetid://127959433" end
+end)
+
+ExploitsBox:AddButton("Super Happy Face", function()
+    local face = game.Players.LocalPlayer.Character:FindFirstChild("Head"):FindFirstChild("face")
+    if face then face.Texture = "rbxassetid://494290547" end
+end)
+
+ExploitsBox:AddButton("Playful Vampire", function()
+    local face = game.Players.LocalPlayer.Character:FindFirstChild("Head"):FindFirstChild("face")
+    if face then face.Texture = "rbxassetid://2409281591" end
+end)
+
+ExploitsBox:AddButton("Zombie T/OM", function()
+    local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+    local animate = char:FindFirstChild("Animate")
+    if animate then
+        animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=782841498"
+        animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=782845736"
+        animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=616168032"
+        animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=616163682"
+        animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=5319841935"
+        animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=707829716"
+        char.Humanoid.Jump = true
+    end
+end)
+
+ExploitsBox:AddButton("Zombie (V2)", function()
+    local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+    local animate = char:FindFirstChild("Animate")
+    if animate then
+        animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=782841498"
+        animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=782845736"
+        animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=616168032"
+        animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=616163682"
+        animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=1083218792"
+        animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=707829716"
+        char.Humanoid.Jump = true
+    end
+end)
+
+ExploitsBox:AddButton("Zombie Run/Walk Only", function()
+    local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+    local animate = char:FindFirstChild("Animate")
+    if animate then
+        animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=616168032"
+        animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=616163682"
+        char.Humanoid.Jump = true
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- AUTO FARM TAB - TUS 2 FUNCIONES PERFECTAS
+-- ═══════════════════════════════════════════════════════════════════════════════════
+local AutoFarmBox = Tabs["Auto Farm"]:AddLeftGroupbox("Auto Farm")
+local AlarmBox = Tabs["Auto Farm"]:AddRightGroupbox("Player Alarm")
+
+getgenv().AutoMarshEnabled = false
+getgenv().MarshLoop = nil  -- ← Variable para matar el loop
+
+AutoFarmBox:AddToggle("AutoMarsh", {
+    Text = "Auto Marshmallow Farm",
+    Default = false,
+    Callback = function(state)
+        getgenv().AutoMarshEnabled = state
+
+        -- DESACTIVAR
+        if not state then
+            if getgenv().MarshLoop then
+                getgenv().MarshLoop = nil
+            end
+            if game.Players.LocalPlayer.Character then
+                pcall(function() game.Players.LocalPlayer.Character.Humanoid:UnequipTools() end)
+            end
+            Library:Notify("Auto Marshmallow OFF", 3)
+            return
+        end
+
+        -- ACTIVAR
+        Library:Notify("Auto Marshmallow ON", 3)
+        getgenv().MarshLoop = task.spawn(function()
+            local player = game.Players.LocalPlayer
+            local VIM = game:GetService("VirtualInputManager")
+            local ToolPriority = {"Water", "Sugar Block Bag", "Gelatin", "Empty Bag"}
+            local currentIndex = 1
+
+            local function pressE()
+                local r = math.random(40, 85)/1000
+                VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                task.wait(r)
+                VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            end
+
+            while getgenv().MarshLoop do
+                if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.CharacterAdded:Wait()
+                    task.wait(2)
+                end
+
+                -- Equipar herramienta
+                local target = ToolPriority[currentIndex]
+                local found = false
+                for _, tool in player.Backpack:GetChildren() do
+                    if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(target)) then
+                        player.Character.Humanoid:UnequipTools()
+                        task.wait(0.22)
+                        player.Character.Humanoid:EquipTool(tool)
+                        task.wait(0.35)
+                        found = true
+                        break
+                    end
+                end
+                currentIndex = currentIndex % #ToolPriority + 1
+
+                task.wait(getgenv().MarshInterval + math.random(-10,15)/100)
+                pressE()
+                task.wait(0.05)
+            end
+        end)
+    end
+})
+
+-- ============== PLAYER ALARM (AHORA SE DESACTIVA 100%) ==============
+getgenv().PlayerAlarm_Enabled = false
+getgenv().PlayerAlarm_Radius = 15
+getgenv().AlarmConnection = nil
+getgenv().AlarmSounds = {}
+
+AlarmBox:AddToggle("PlayerAlarm", {
+    Text = "Player Alarm (Bank Alert)",
+    Default = false,
+    Callback = function(state)
+        getgenv().PlayerAlarm_Enabled = state
+
+        -- DESACTIVAR
+        if not state then
+            if getgenv().AlarmConnection then
+                getgenv().AlarmConnection:Disconnect()
+                getgenv().AlarmConnection = nil
+            end
+            for _, sound in pairs(getgenv().AlarmSounds) do
+                if sound and sound.Parent then
+                    sound:Stop()
+                    sound:Destroy()
+                end
+            end
+            getgenv().AlarmSounds = {}
+            Library:Notify("Player Alarm OFF", 3)
+            return
+        end
+
+        -- ACTIVAR
+        Library:Notify("Player Alarm ON", 3)
+        getgenv().AlarmConnection = game:GetService("RunService").Heartbeat:Connect(function()
+            if not getgenv().PlayerAlarm_Enabled then return end
+            if not game.Players.LocalPlayer.Character or not game.Players.LocalPlayer.Character:FindFirstChild("Head") then return end
+
+            local myHead = game.Players.LocalPlayer.Character.Head
+
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (myHead.Position - plr.Character.HumanoidRootPart.Position).Magnitude
+                    local uid = plr.UserId
+
+                    if dist <= getgenv().PlayerAlarm_Radius then
+                        if not getgenv().AlarmSounds[uid] then
+                            local head = plr.Character:FindFirstChild("Head") or plr.Character.HumanoidRootPart
+                            local sound = Instance.new("Sound")
+                            sound.SoundId = "rbxassetid://7594301531"
+                            sound.Volume = 2
+                            sound.Looped = true
+                            sound.Parent = head
+                            sound:Play()
+                            getgenv().AlarmSounds[uid] = sound
+                        end
+                    else
+                        if getgenv().AlarmSounds[uid] then
+                            getgenv().AlarmSounds[uid]:Stop()
+                            getgenv().AlarmSounds[uid]:Destroy()
+                            getgenv().AlarmSounds[uid] = nil
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+
+-- Slider del radio (funciona perfecto)
+AlarmBox:AddSlider("AlarmRadius", {
+    Text = "Alarm Radius",
+    Min = 1,
+    Max = 50,
+    Default = 15,
+    Rounding = 1,
+    Callback = function(v)
+        getgenv().PlayerAlarm_Radius = v
+    end
+})
+
+-- ==================== PLAYER TAB → CHARACTER (ANTES MOVEMENT) ====================
+local CharacterBox = Tabs.Player:AddLeftGroupbox("Character")
+
+-- ANTI AFK (evita kick por inactividad)
+local AntiAFKConnection
+CharacterBox:AddToggle("AntiAFK", {
+    Text = "Anti-AFK",
+    Default = false,
+    Callback = function(state)
+        if state then
+            AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+            end)
+            Library:Notify("Anti-AFK Activado", 3)
+        else
+            if AntiAFKConnection then
+                AntiAFKConnection:Disconnect()
+                AntiAFKConnection = nil
+            end
+            Library:Notify("Anti-AFK Desactivado", 3)
+        end
+    end
+})
+
+-- INFINITE YIELD ADMIN COMMANDS
+CharacterBox:AddButton("Infinite Yield", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    Library:Notify("Infinite Yield cargado!", 4)
+end)
+
+-- FE RESPAWN (mata y respawnea instantáneo)
+CharacterBox:AddButton("FE Respawn", function()
+    local lp = game.Players.LocalPlayer
+    if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        lp.Character.Humanoid.Health = 0
+    end
+    Library:Notify("Respawneando...", 2)
+end)
+
+-- ENABLE RESET BUTTON (activa el botón de reset aunque esté desactivado)
+-- ENABLE RESET BUTTON COMO TOGGLE (ON/OFF)
+local ResetButtonConnection
+
+CharacterBox:AddToggle("EnableReset", {
+    Text = "Enable Reset Button",
+    Default = false,
+    Callback = function(state)
+        if state then
+            -- Activar el botón de Reset
+            ResetButtonConnection = game:GetService("StarterGui"):SetCore("ResetButtonCallback", true)
+            Library:Notify("Reset Button activado", 3)
+        else
+            -- Desactivar el botón de Reset (vuelve al estado por defecto: desactivado)
+            if ResetButtonConnection then
+                pcall(function()
+                    game:GetService("StarterGui"):SetCore("ResetButtonCallback", false)
+                end)
+                ResetButtonConnection = nil
+            end
+            Library:Notify("Reset Button desactivado", 3)
+        end
+    end
+})
+
+-- FULLBRIGHT FE REAL (MÁXIMA CALIDAD - COMO INFINITE YIELD)
+local Lighting = game:GetService("Lighting")
+local OldLighting = {
+    Brightness = Lighting.Brightness,
+    GlobalShadows = Lighting.GlobalShadows,
+    FogEnd = Lighting.FogEnd,
+    FogStart = Lighting.FogStart,
+    ClockTime = Lighting.ClockTime,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient
+}
+
+local FullbrightConnection
+CharacterBox:AddToggle("Fullbright", {
+    Text = "Fullbright",
+    Default = false,
+    Callback = function(state)
+        if state then
+            -- Aplicar Fullbright
+            Lighting.Brightness = 3
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 100000
+            Lighting.FogStart = 0
+            Lighting.ClockTime = 12
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+
+            -- Eliminar efectos de oscuridad
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("Atmosphere") then
+                    v.Enabled = false
+                end
+            end
+
+            -- Mantener Fullbright aunque el juego intente cambiarlo
+            FullbrightConnection = Lighting.ChildAdded:Connect(function(child)
+                if state and (child:IsA("BloomEffect") or child:IsA("ColorCorrectionEffect") or child:IsA("SunRaysEffect") or child:IsA("Atmosphere")) then
+                    child.Enabled = false
+                end
+            end)
+
+            Library:Notify("Fullbright Activado", 3)
+        else
+            -- Restaurar iluminación original
+            Lighting.Brightness = OldLighting.Brightness
+            Lighting.GlobalShadows = OldLighting.GlobalShadows
+            Lighting.FogEnd = OldLighting.FogEnd
+            Lighting.FogStart = OldLighting.FogStart
+            Lighting.ClockTime = OldLighting.ClockTime
+            Lighting.Ambient = OldLighting.Ambient
+            Lighting.OutdoorAmbient = OldLighting.OutdoorAmbient
+
+            -- Reactivar efectos
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") then
+                    v.Enabled = true
+                end
+            end
+
+            if FullbrightConnection then
+                FullbrightConnection:Disconnect()
+                FullbrightConnection = nil
+            end
+
+            Library:Notify("Fullbright Desactivado", 3)
+        end
+    end
+})
+
+-- ==================== VISUALS TAB → ESP V2 (DERECHO) - CORREGIDO 100% ====================
+local ESPV2Box = Tabs.Visuals:AddRightGroupbox("ESP V2 (New)")
+
+-- Configuración
+local ToolsESP_Enabled = false
+local TEXT_SIZE = 10
+local MAX_WIDTH = 380
+local espDrawings = {}
+
+-- Herramientas ocultas
+local HIDDEN_TOOLS = {
+    "empty bag", "potato", "ghost skull face half mask", "black surgical mask", "black surgical", "skimask",
+    "flour", "card", "gelatin", "lockpick", "sugar block bag", "crowbar", "water", "fake id", "fist", "phone",
+    "standard clip", "speed loader", "extended clip", "heavy magazine", "drum magazine", "lockpick", "crate"
+}
+
+-- Armas peligrosas → ROJO
+local SPECIAL_TOOLS = {
+    "prl-16", "arp9", "mpx", "honey badger pistol", "ddm4 v7 pistol", "ar pistol",
+    "draco", "tec-9", "mcx", ".308 ar-10", "honey badger", "m&p-15 sport ii",
+    "300 blackout", "micro draco", "micro arp", "ak draco", "suppressed mcx",
+    "suppressed arp", "whiteout ar9", "fn57", "g19xext", "machete", "springfieldxd mod",
+    ".308 ar-10 drum", "honey badger drum", "m&p-15 sport ii drum",
+    "micro draco drum", "300 blackout drum", "micro arp drum", "ak draco drum",
+    "tan 300 blk mcx", "springfieldxd drum", "mcx drum", "g19xdrum", "tec-9 drum",
+    "fn57drum", "arp drum", "taurus drum", "five seven drum", "five-seven drum",
+    "plr-16 drum", "g23 drum", "vp9 drum", "p80 drum", "glocks drum", "draco drum",
+    "glock 20 drum", "hi-point drum", "g22drum"
+}
+
+local hidden = {}
+for _, v in ipairs(HIDDEN_TOOLS) do hidden[string.lower(v)] = true end
+local special = {}
+for _, v in ipairs(SPECIAL_TOOLS) do special[string.lower(v)] = true end
+
+-- Crear ESP
+local function createESP(plr)
+    if plr == game.Players.LocalPlayer or espDrawings[plr] then return end
+    local txt = Drawing.new("Text")
+    txt.Size = TEXT_SIZE
+    txt.Center = true
+    txt.Outline = true
+    txt.OutlineColor = Color3.fromRGB(0,0,0)
+    txt.Font = 2
+    txt.Visible = false
+    txt.Color = Color3.fromRGB(230,230,230)
+    espDrawings[plr] = {text = txt}
+end
+
+-- Obtener texto de herramientas
+local function getToolsText(plr)
+    local tools = {}
+    if plr.Character then
+        local eq = plr.Character:FindFirstChildOfClass("Tool")
+        if eq and not hidden[string.lower(eq.Name)] then table.insert(tools, eq.Name) end
+    end
+    local bp = plr:FindFirstChild("Backpack")
+    if bp then
+        for _, t in bp:GetChildren() do
+            if t:IsA("Tool") and not hidden[string.lower(t.Name)] then
+                table.insert(tools, t.Name)
+            end
+        end
+    end
+    if #tools == 0 then return nil end
+
+    local hasSpecial = false
+    for _, name in ipairs(tools) do
+        if special[string.lower(name)] then  -- ← CORREGIDO AQUÍ
+            hasSpecial = true
+            break
+        end
+    end
+
+    local color = hasSpecial and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(230,230,230)
+
+    if #tools <= 5 then
+        return table.concat(tools, ", "), color
+    else
+        local short = {}
+        for i = 1, 4 do table.insert(short, tools[i]) end
+        table.insert(short, tools[5] .. " | +" .. (#tools - 4) .. " Más")
+        return table.concat(short, ", "), color
+    end
+end
+
+-- Loop principal
+game:GetService("RunService").Heartbeat:Connect(function()
+    if not ToolsESP_Enabled then
+        for _, obj in pairs(espDrawings) do
+            if obj.text then obj.text.Visible = false end
+        end
+        return
+    end
+
+    for plr, obj in pairs(espDrawings) do
+        local line, color = getToolsText(plr)
+        if not line or not plr.Character or not plr.Character:FindFirstChild("Head") then
+            obj.text.Visible = false
+            continue
+        end
+
+        local headPos = plr.Character.Head.Position + Vector3.new(0, 3.6, 0)
+        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(headPos)
+        if not onScreen then
+            obj.text.Visible = false
+            continue
+        end
+
+        local size = TEXT_SIZE
+        local bounds = game:GetService("TextService"):GetTextSize(line, size, Enum.Font.GothamBold, Vector2.new(99999, 50))
+        while bounds.X > MAX_WIDTH and size > 11 do
+            size = size - 0.5
+            bounds = game:GetService("TextService"):GetTextSize(line, size, Enum.Font.GothamBold, Vector2.new(99999, 50))
+        end
+
+        obj.text.Size = size
+        obj.text.Text = line
+        obj.text.Color = color
+        obj.text.Position = Vector2.new(screenPos.X, screenPos.Y)
+        obj.text.Visible = true
+    end
+end)
+
+-- Limpiar al salir
+game.Players.PlayerRemoving:Connect(function(plr)
+    if espDrawings[plr] then
+        espDrawings[plr].text:Remove()
+        espDrawings[plr] = nil
+    end
+end)
+
+-- Crear ESP para jugadores
+for _, p in game.Players:GetPlayers() do
+    if p ~= game.Players.LocalPlayer then createESP(p) end
+end
+game.Players.PlayerAdded:Connect(function(p)
+    if p ~= game.Players.LocalPlayer then createESP(p) end
+end)
+
+-- TOGGLE + SLIDER (SIN SPAM)
+ESPV2Box:AddToggle("ToolsESP", {
+    Text = "ESP Show Guns",
+    Default = false,
+    Callback = function(state)
+        ToolsESP_Enabled = state
+        Library:Notify(state and "ESP Tools V2 Activado" or "ESP Tools V2 Desactivado", 3)
+    end
+})
+
+ESPV2Box:AddSlider("ESPToolsSize", {
+    Text = "Guns Size",
+    Min = 10,
+    Max = 50,
+    Default = 10,
+    Rounding = 1,
+    Callback = function(value)
+        TEXT_SIZE = value
+    end
+})
+
+-- ==================== VISUALS TAB → ESP V1 (IZQUIERDO) - FINAL & PERFECTO ====================
+local ESPV1Box = Tabs.Visuals:AddLeftGroupbox("ESP V1 - (Fix Name)")
+
+-- Configuración
+local ESP_Enabled = false
+local CurrentTextSize = 12
+local CurrentNameColor = Color3.fromRGB(255, 255, 255)
+local FriendColor = Color3.fromRGB(0, 255, 0)
+local FriendsList = {}
+local ESP_Holders = {}
+
+-- Crear ESP para un jugador
+local function CreateESP(plr)
+    if plr == game.Players.LocalPlayer or ESP_Holders[plr] then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    local text = Instance.new("TextLabel")
+    
+    billboard.Name = "NameESP"
+    billboard.Adornee = plr.Character:FindFirstChild("Head")
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = plr.Character
+    
+    text.Size = UDim2.new(1, 0, 1, 0)
+    text.BackgroundTransparency = 1
+    text.Text = plr.DisplayName .. " (@" .. plr.Name .. ")"
+    text.TextColor3 = CurrentNameColor
+    text.TextSize = CurrentTextSize
+    text.Font = Enum.Font.GothamBold
+    text.TextStrokeTransparency = 0
+    text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    text.Parent = billboard
+    
+    ESP_Holders[plr] = billboard
+end
+
+-- Actualizar todos los ESP
+local function UpdateESP()
+    for plr, holder in pairs(ESP_Holders) do
+        if holder and holder.Parent and plr.Character and plr.Character:FindFirstChild("Head") then
+            local textLabel = holder:FindFirstChild("TextLabel")
+            if textLabel then
+                textLabel.TextSize = CurrentTextSize
+                if table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName) then
+                    textLabel.TextColor3 = FriendColor
+                else
+                    textLabel.TextColor3 = CurrentNameColor
+                end
+            end
+        end
+    end
+end
+
+-- Nuevos jugadores
+game.Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        if ESP_Enabled then
+            task.wait(1)
+            CreateESP(plr)
+            UpdateESP()
+        end
+    end)
+end)
+
+-- Limpiar al salir
+game.Players.PlayerRemoving:Connect(function(plr)
+    if ESP_Holders[plr] then
+        ESP_Holders[plr]:Destroy()
+        ESP_Holders[plr] = nil
+    end
+end)
+
+-- TOGGLE + COLORPICKERS (ENCADENADOS) + SLIDER → SIN NOTIFICACIONES
+ESPV1Box:AddToggle("ESPNames", {
+    Text = "ESP Names",
+    Default = false,
+    Callback = function(state)
+        ESP_Enabled = state
+        
+        if state then
+            for _, plr in game.Players:GetPlayers() do
+                if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+                    CreateESP(plr)
+                end
+            end
+            Library:Notify("ESP Names Activado", 3)
+        else
+            for _, holder in pairs(ESP_Holders) do
+                if holder then holder:Destroy() end
+            end
+            ESP_Holders = {}
+            Library:Notify("ESP Names Desactivado", 3)
+        end
+    end
+})
+:AddColorPicker("NormalColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Normal Name Color",
+    Transparency = 0,
+    Callback = function(Value)
+        CurrentNameColor = Value
+        UpdateESP()
+        -- SIN NOTIFICACIÓN
+    end,
+})
+:AddColorPicker("FriendColor", {
+    Default = Color3.fromRGB(0, 255, 0),
+    Title = "Friend Name Color",
+    Transparency = 0,
+    Callback = function(Value)
+        FriendColor = Value
+        UpdateESP()
+        -- SIN NOTIFICACIÓN
+    end,
+})
+
+-- SLIDER DE TAMAÑO (SIN NOTIFICACIÓN)
+ESPV1Box:AddSlider("NameSize", {
+    Text = "Name Size:",
+    Min = 10,
+    Max = 100,
+    Default = 10,
+    Rounding = 1,
+    Callback = function(v)
+        CurrentTextSize = v
+        UpdateESP()
+        -- SIN NOTIFICACIÓN
+    end
+})
+
+-- SISTEMA DE AMIGOS
+local FriendInput = ESPV1Box:AddInput("FriendName", {
+    Default = "Ej: xSh4dow",
+    Text = "Friend's Name",
+    Placeholder = "Ej: xSh4dow",
+    Callback = function() end
+})
+
+ESPV1Box:AddButton("Add Friend", function()
+    local name = FriendInput.Value
+    if name and name ~= "" and name ~= "Ej: xSh4dow" then
+        table.insert(FriendsList, name)
+        Library:Notify("Amigo añadido: " .. name, 3)
+        UpdateESP()
+        FriendInput:SetValue("")
+    else
+        Library:Notify("Nombre inválido", 3)
+    end
+end)
+
+ESPV1Box:AddButton("Clear Friends", function()
+    FriendsList = {}
+    Library:Notify("Lista de amigos limpiada", 3)
+    UpdateESP()
+end)
+
+-- Configuración
+local BoxESP_Enabled = false
+local BoxColor = Color3.fromRGB(255, 255, 255)
+local BoxThickness = 2
+
+local ESPBoxes = {}  -- [player] = box
+
+-- Crear caja para un jugador
+local function CreateBox(plr)
+    if plr == game.Players.LocalPlayer or ESPBoxes[plr] then return end
+
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = BoxColor
+    box.Thickness = BoxThickness
+    box.Transparency = 1
+    box.Filled = false
+
+    ESPBoxes[plr] = box
+end
+
+-- Loop principal
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not BoxESP_Enabled then
+        for _, box in pairs(ESPBoxes) do
+            box.Visible = false
+        end
+        return
+    end
+
+    for plr, box in pairs(ESPBoxes) do
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") or not plr.Character:FindFirstChild("Head") then
+            box.Visible = false
+            continue
+        end
+
+        local headPos = plr.Character.Head.Position
+        local rootPos = plr.Character.HumanoidRootPart.Position
+
+        local top = workspace.CurrentCamera:WorldToViewportPoint(headPos + Vector3.new(0, 2, 0))
+        local bottom = workspace.CurrentCamera:WorldToViewportPoint(rootPos - Vector3.new(0, 3, 0))
+
+        if top.Z < 0 or bottom.Z < 0 then
+            box.Visible = false
+            continue
+        end
+
+        local height = math.abs(top.Y - bottom.Y)
+        local width = height * 0.6
+
+        box.Size = Vector2.new(width, height)
+        box.Position = Vector2.new(top.X - width/2, top.Y)
+        box.Color = BoxColor
+        box.Thickness = BoxThickness
+        box.Visible = true
+    end
+end)
+
+-- Limpiar al salir
+game.Players.PlayerRemoving:Connect(function(plr)
+    if ESPBoxes[plr] then
+        ESPBoxes[plr]:Remove()
+        ESPBoxes[plr] = nil
+    end
+end)
+
+-- Crear para jugadores existentes
+for _, plr in game.Players:GetPlayers() do
+    if plr ~= game.Players.LocalPlayer then CreateBox(plr) end
+end
+
+game.Players.PlayerAdded:Connect(function(plr)
+    if plr ~= game.Players.LocalPlayer then CreateBox(plr) end
+end)
+
+-- TOGGLE + COLOR + GROSOR (SIN NOTIFICACIONES EN SLIDER)
+ESPV1Box:AddToggle("BoxOnly", {
+    Text = "ESP Box",
+    Default = false,
+    Callback = function(state)
+        BoxESP_Enabled = state
+        Library:Notify(state and "ESP Box Activado" or "ESP Box Desactivado", 3)
+    end
+})
+:AddColorPicker("BoxColorPicker", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Box Color",
+    Transparency = 0,
+    Callback = function(col)
+        BoxColor = col
+    end,
+})
+
+ESPV1Box:AddSlider("BoxThickness", {
+    Text = "Box Thickness",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Rounding = 1,
+    Callback = function(v)
+        BoxThickness = v
+    end
+})
+
+-- ==================== VISUALS TAB → ESP TRACER (LÍNEAS) ====================
+-- Configuración
+local Tracer_Enabled = false
+local Tracer_Color = Color3.fromRGB(255, 255, 255)
+local Tracer_Thickness = 2
+local Tracer_From = "Bottom"  -- "Bottom", "Middle", "Top"
+
+local TracerLines = {}  -- [player] = line
+
+-- Crear tracer para un jugador
+local function CreateTracer(plr)
+    if plr == game.Players.LocalPlayer or TracerLines[plr] then return end
+
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = Tracer_Color
+    line.Thickness = Tracer_Thickness
+    line.Transparency = 1
+
+    TracerLines[plr] = line
+end
+
+-- Loop principal
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not Tracer_Enabled then
+        for _, line in pairs(TracerLines) do
+            line.Visible = false
+        end
+        return
+    end
+
+    local screenCenterX = workspace.CurrentCamera.ViewportSize.X / 2
+    local screenY = workspace.CurrentCamera.ViewportSize.Y
+
+    local fromY
+    if Tracer_From == "Bottom" then
+        fromY = screenY
+    elseif Tracer_From == "Middle" then
+        fromY = screenY / 2
+    else -- Top
+        fromY = 0
+    end
+
+    for plr, line in pairs(TracerLines) do
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") or not plr.Character:FindFirstChild("Head") then
+            line.Visible = false
+            continue
+        end
+
+        local root = plr.Character.HumanoidRootPart.Position
+        local head = plr.Character.Head.Position + Vector3.new(0, 1, 0)
+        local targetPos = head  -- Puedes cambiar a root.Position si quieres desde los pies
+
+        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPos)
+
+        if onScreen and screenPos.Z > 0 then
+            line.From = Vector2.new(screenCenterX, fromY)
+            line.To = Vector2.new(screenPos.X, screenPos.Y)
+            line.Color = Tracer_Color
+            line.Thickness = Tracer_Thickness
+            line.Visible = true
+        else
+            line.Visible = false
+        end
+    end
+end)
+
+-- Limpiar al salir
+game.Players.PlayerRemoving:Connect(function(plr)
+    if TracerLines[plr] then
+        TracerLines[plr]:Remove()
+        TracerLines[plr] = nil
+    end
+end)
+
+-- Crear para jugadores existentes
+for _, plr in game.Players:GetPlayers() do
+    if plr ~= game.Players.LocalPlayer then CreateTracer(plr) end
+end
+
+game.Players.PlayerAdded:Connect(function(plr)
+    if plr ~= game.Players.LocalPlayer then CreateTracer(plr) end
+end)
+
+-- TOGGLE + COLOR + GROSOR + POSICIÓN
+ESPV1Box:AddToggle("TracerESP", {
+    Text = "ESP Tracer",
+    Default = false,
+    Callback = function(state)
+        Tracer_Enabled = state
+        Library:Notify(state and "ESP Tracer Activado" or "ESP Tracer Desactivado", 3)
+    end
+})
+:AddColorPicker("TracerColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Tracer Color",
+    Transparency = 0,
+    Callback = function(col)
+        Tracer_Color = col
+    end,
+})
+
+ESPV1Box:AddSlider("TracerThickness", {
+    Text = "Tracer Thickness",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Rounding = 1,
+    Callback = function(v)
+        Tracer_Thickness = v
+    end
+})
+
+ESPV1Box:AddDropdown("TracerFrom", {
+    Values = {"Bottom", "Middle", "Top"},
+    Default = "Bottom",
+    Text = "Tracer From",
+    Callback = function(value)
+        Tracer_From = value
+    end
+})
+
+-- ==================== VISUALS TAB → ESP SKELETON (R6 + R15) ====================
+-- Configuración
+local SkeletonESP_Enabled = false
+local SkeletonColor = Color3.fromRGB(255, 255, 255)
+local SkeletonThickness = 2
+
+local SkeletonLines = {}  -- [player] = {lines = {}, index = 1}
+
+-- Crear skeleton para un jugador
+local function CreateSkeleton(plr)
+    if plr == game.Players.LocalPlayer or SkeletonLines[plr] then return end
+
+    local lines = {}
+    for i = 1, 30 do  -- Suficientes líneas para todo el esqueleto
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Color = SkeletonColor
+        line.Thickness = SkeletonThickness
+        line.Transparency = 1
+        table.insert(lines, line)
+    end
+
+    SkeletonLines[plr] = {lines = lines, index = 1}
+end
+
+-- Dibujar línea entre dos partes
+local function DrawLine(plr, part1, part2)
+    local data = SkeletonLines[plr]
+    if not data or not plr.Character then return end
+
+    local p1 = part1 and part1.Position
+    local p2 = part2 and part2.Position
+    if not p1 or not p2 then return end
+
+    local screen1, onScreen1 = workspace.CurrentCamera:WorldToViewportPoint(p1)
+    local screen2, onScreen2 = workspace.CurrentCamera:WorldToViewportPoint(p2)
+
+    if onScreen1 and onScreen2 then
+        local line = data.lines[data.index]
+        if line then
+            line.From = Vector2.new(screen1.X, screen1.Y)
+            line.To = Vector2.new(screen2.X, screen2.Y)
+            line.Color = SkeletonColor
+            line.Thickness = SkeletonThickness
+            line.Visible = true
+            data.index = (data.index % #data.lines) + 1
+        end
+    end
+end
+
+-- Obtener parte del cuerpo (compatible R6/R15)
+local function GetPart(plr, name)
+    local char = plr.Character
+    if not char then return nil end
+
+    if name == "Head" then return char:FindFirstChild("Head") end
+    if name == "Torso" then return char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") end
+    if name == "UpperTorso" then return char:FindFirstChild("UpperTorso") end
+    if name == "LowerTorso" then return char:FindFirstChild("LowerTorso") end
+
+    -- Brazos
+    if name == "LeftUpperArm" then return char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm") end
+    if name == "LeftLowerArm" then return char:FindFirstChild("LeftLowerArm") or char:FindFirstChild("Left Arm") end
+    if name == "LeftHand" then return char:FindFirstChild("LeftHand") or char:FindFirstChild("Left Arm") end
+    if name == "RightUpperArm" then return char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm") end
+    if name == "RightLowerArm" then return char:FindFirstChild("RightLowerArm") or char:FindFirstChild("Right Arm") end
+    if name == "RightHand" then return char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm") end
+
+    -- Piernas
+    if name == "LeftUpperLeg" then return char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg") end
+    if name == "LeftLowerLeg" then return char:FindFirstChild("LeftLowerLeg") or char:FindFirstChild("Left Leg") end
+    if name == "LeftFoot" then return char:FindFirstChild("LeftFoot") or char:FindFirstChild("Left Leg") end
+    if name == "RightUpperLeg" then return char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg") end
+    if name == "RightLowerLeg" then return char:FindFirstChild("RightLowerLeg") or char:FindFirstChild("Right Leg") end
+    if name == "RightFoot" then return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg") end
+
+    return nil
+end
+
+-- Loop principal
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not SkeletonESP_Enabled then
+        for _, data in pairs(SkeletonLines) do
+            for _, line in pairs(data.lines) do
+                line.Visible = false
+            end
+            data.index = 1
+        end
+        return
+    end
+
+    for plr, data in pairs(SkeletonLines) do
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then
+            for _, line in pairs(data.lines) do line.Visible = false end
+            data.index = 1
+            continue
+        end
+
+        -- Reset index
+        data.index = 1
+
+        local char = plr.Character
+
+        -- Cabeza → Cuello
+        local head = GetPart(plr, "Head")
+        local neck = GetPart(plr, "UpperTorso") or GetPart(plr, "Torso")
+        if head and neck then DrawLine(plr, head, neck) end
+
+        -- Torso superior → inferior
+        local upperTorso = GetPart(plr, "UpperTorso")
+        local lowerTorso = GetPart(plr, "LowerTorso")
+        if upperTorso and lowerTorso then DrawLine(plr, upperTorso, lowerTorso) end
+
+        -- Brazos
+        local leftShoulder = upperTorso or neck
+        local rightShoulder = upperTorso or neck
+        if leftShoulder then DrawLine(plr, leftShoulder, GetPart(plr, "LeftUpperArm")) end
+        if rightShoulder then DrawLine(plr, rightShoulder, GetPart(plr, "RightUpperArm")) end
+        DrawLine(plr, GetPart(plr, "LeftUpperArm"), GetPart(plr, "LeftLowerArm"))
+        DrawLine(plr, GetPart(plr, "LeftLowerArm"), GetPart(plr, "LeftHand"))
+        DrawLine(plr, GetPart(plr, "RightUpperArm"), GetPart(plr, "RightLowerArm"))
+        DrawLine(plr, GetPart(plr, "RightLowerArm"), GetPart(plr, "RightHand"))
+
+        -- Piernas
+        local pelvis = lowerTorso or upperTorso or neck
+        if pelvis then
+            DrawLine(plr, pelvis, GetPart(plr, "LeftUpperLeg"))
+            DrawLine(plr, pelvis, GetPart(plr, "RightUpperLeg"))
+        end
+        DrawLine(plr, GetPart(plr, "LeftUpperLeg"), GetPart(plr, "LeftLowerLeg"))
+        DrawLine(plr, GetPart(plr, "LeftLowerLeg"), GetPart(plr, "LeftFoot"))
+        DrawLine(plr, GetPart(plr, "RightUpperLeg"), GetPart(plr, "RightLowerLeg"))
+        DrawLine(plr, GetPart(plr, "RightLowerLeg"), GetPart(plr, "RightFoot"))
+    end
+end)
+
+-- Limpiar al salir
+game.Players.PlayerRemoving:Connect(function(plr)
+    if SkeletonLines[plr] then
+        for _, line in pairs(SkeletonLines[plr].lines) do
+            line:Remove()
+        end
+        SkeletonLines[plr] = nil
+    end
+end)
+
+-- Crear para jugadores existentes
+for _, plr in game.Players:GetPlayers() do
+    if plr ~= game.Players.LocalPlayer then CreateSkeleton(plr) end
+end
+game.Players.PlayerAdded:Connect(function(plr)
+    if plr ~= game.Players.LocalPlayer then CreateSkeleton(plr) end
+end)
+
+-- TOGGLE + COLOR + GROSOR
+ESPV2Box:AddToggle("SkeletonESP", {
+    Text = "ESP Skeleton (R6/R15)",
+    Default = false,
+    Callback = function(state)
+        SkeletonESP_Enabled = state
+        Library:Notify(state and "ESP Skeleton Activado" or "ESP Skeleton Desactivado", 3)
+    end
+})
+:AddColorPicker("SkeletonColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Skeleton Color",
+    Transparency = 0,
+    Callback = function(col)
+        SkeletonColor = col
+    end,
+})
+
+ESPV2Box:AddSlider("SkeletonThickness", {
+    Text = "Skeleton Thickness",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Rounding = 1,
+    Callback = function(v)
+        SkeletonThickness = v
+    end
+})
+
+-- ==================== VISUALS TAB → CORNER BOX ESP ====================
+-- Configuración
+local CornerBox_Enabled = false
+local CornerBox_Color = Color3.fromRGB(255, 0, 0)
+local CornerBox_Thickness = 2
+local CornerBox_AutoThickness = true
+local CornerBox_TeamCheck = false
+local CornerBox_TeamColor = false
+
+local CornerBoxes = {}  -- [player] = {TL1, TL2, TR1, TR2, BL1, BL2, BR1, BR2}
+
+-- Crear línea
+local function NewLine()
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = CornerBox_Color
+    line.Thickness = CornerBox_Thickness
+    line.Transparency = 1
+    return line
+end
+
+-- Crear Corner Box para un jugador
+local function CreateCornerBox(plr)
+    if plr == game.Players.LocalPlayer or CornerBoxes[plr] then return end
+
+    local lines = {
+        TL1 = NewLine(), TL2 = NewLine(),
+        TR1 = NewLine(), TR2 = NewLine(),
+        BL1 = NewLine(), BL2 = NewLine(),
+        BR1 = NewLine(), BR2 = NewLine()
+    }
+
+    CornerBoxes[plr] = lines
+end
+
+-- Loop principal
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not CornerBox_Enabled then
+        for _, lines in pairs(CornerBoxes) do
+            for _, line in pairs(lines) do
+                line.Visible = false
+            end
+        end
+        return
+    end
+
+    for plr, lines in pairs(CornerBoxes) do
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") or not plr.Character:FindFirstChild("Head") or plr.Character.Humanoid.Health <= 0 then
+            for _, line in pairs(lines) do line.Visible = false end
+            continue
+        end
+
+        local root = plr.Character.HumanoidRootPart
+        local head = plr.Character.Head
+        local humPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(root.Position)
+
+        if not onScreen then
+            for _, line in pairs(lines) do line.Visible = false end
+            continue
+        end
+
+        -- Calcular tamaño del jugador en pantalla
+        local top = workspace.CurrentCamera:WorldToViewportPoint(head.Position + Vector3.new(0, 2, 0))
+        local bottom = workspace.CurrentCamera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+        local height = math.abs(top.Y - bottom.Y)
+        local width = height * 0.6
+
+        -- Offset para las esquinas
+        local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
+        local offset = math.clamp(1/distance * 750, 20, 150)
+
+        -- Aplicar Team Check / Team Color
+        local currentColor = CornerBox_Color
+        if CornerBox_TeamCheck and plr.Team == game.Players.LocalPlayer.Team then
+            currentColor = Color3.fromRGB(0, 255, 0)
+        elseif CornerBox_TeamColor then
+            currentColor = plr.TeamColor.Color
+        end
+
+        -- Aplicar grosor automático o manual
+        local thickness = CornerBox_Thickness
+        if CornerBox_AutoThickness then
+            thickness = math.clamp(1/distance * 100, 1, 5)
+        end
+
+        for _, line in pairs(lines) do
+            line.Color = currentColor
+            line.Thickness = thickness
+        end
+
+        -- Esquinas
+        lines.TL1.From = Vector2.new(humPos.X - width/2, humPos.Y - height/2)
+        lines.TL1.To = Vector2.new(humPos.X - width/2 + offset, humPos.Y - height/2)
+        lines.TL2.From = Vector2.new(humPos.X - width/2, humPos.Y - height/2)
+        lines.TL2.To = Vector2.new(humPos.X - width/2, humPos.Y - height/2 + offset)
+
+        lines.TR1.From = Vector2.new(humPos.X + width/2, humPos.Y - height/2)
+        lines.TR1.To = Vector2.new(humPos.X + width/2 - offset, humPos.Y - height/2)
+        lines.TR2.From = Vector2.new(humPos.X + width/2, humPos.Y - height/2)
+        lines.TR2.To = Vector2.new(humPos.X + width/2, humPos.Y - height/2 + offset)
+
+        lines.BL1.From = Vector2.new(humPos.X - width/2, humPos.Y + height/2)
+        lines.BL1.To = Vector2.new(humPos.X - width/2 + offset, humPos.Y + height/2)
+        lines.BL2.From = Vector2.new(humPos.X - width/2, humPos.Y + height/2)
+        lines.BL2.To = Vector2.new(humPos.X - width/2, humPos.Y + height/2 - offset)
+
+        lines.BR1.From = Vector2.new(humPos.X + width/2, humPos.Y + height/2)
+        lines.BR1.To = Vector2.new(humPos.X + width/2 - offset, humPos.Y + height/2)
+        lines.BR2.From = Vector2.new(humPos.X + width/2, humPos.Y + height/2)
+        lines.BR2.To = Vector2.new(humPos.X + width/2, humPos.Y + height/2 - offset)
+
+        -- Mostrar
+        for _, line in pairs(lines) do
+            line.Visible = true
+        end
+    end
+end)
+
+-- Limpiar al salir
+game.Players.PlayerRemoving:Connect(function(plr)
+    if CornerBoxes[plr] then
+        for _, line in pairs(CornerBoxes[plr]) do
+            line:Remove()
+        end
+        CornerBoxes[plr] = nil
+    end
+end)
+
+-- Crear para jugadores existentes
+for _, plr in game.Players:GetPlayers() do
+    if plr ~= game.Players.LocalPlayer then CreateCornerBox(plr) end
+end
+game.Players.PlayerAdded:Connect(function(plr)
+    if plr ~= game.Players.LocalPlayer then CreateCornerBox(plr) end
+end)
+
+-- TOGGLE + OPCIONES
+ESPV2Box:AddToggle("CornerBoxESP", {
+    Text = "ESP Corner Box",
+    Default = false,
+    Callback = function(state)
+        CornerBox_Enabled = state
+        Library:Notify(state and "Corner Box ESP Activado" or "Corner Box ESP Desactivado", 3)
+    end
+})
+:AddColorPicker("CornerBoxColor", {
+    Default = Color3.fromRGB(255, 0, 0),
+    Title = "Corner Box Color",
+    Transparency = 0,
+    Callback = function(col)
+        CornerBox_Color = col
+    end,
+})
+
+ESPV2Box:AddSlider("CornerBoxThickness", {
+    Text = "Corner Thickness",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Rounding = 1,
+    Callback = function(v)
+        CornerBox_Thickness = v
+    end
+})
+
+ESPV2Box:AddToggle("AutoThickness", {
+    Text = "Auto Thickness",
+    Default = false,
+    Callback = function(v)
+        CornerBox_AutoThickness = v
+    end
+})
+
+ESPV2Box:AddToggle("TeamCheck", {
+    Text = "Team Check (Green)",
+    Default = false,
+    Callback = function(v)
+        CornerBox_TeamCheck = v
+    end
+})
+
+ESPV2Box:AddToggle("TeamColor", {
+    Text = "Team Color",
+    Default = false,
+    Callback = function(v)
+        CornerBox_TeamColor = v
+    end
+})
+
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- COMBAT & VISUALS (vacíos por ahora)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- AIMLOCK 100% FUNCIONAL PARA OBSIDIAN ANTIGUA (la que tú tienes)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+-- Fix del spam rojo (CoreGui)
+spawn(function()
+    while task.wait(10) do
+        pcall(function()
+            game:GetService("CoreGui").RobloxGui.Modules.Common.Locales:Destroy()
+        end)
+    end
+end)
+
+getgenv().Aimlock = {
+    Enabled = false,
+    Aiming = false,
+    Part = "Head",
+    OldPart = "Head",
+    Radius = 80,
+    TeamCheck = false,
+    Predict = true,
+    Prediction = 15,
+    Smooth = 0.14,
+    AliveCheck = false,
+    Airshot = false
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+local Target = nil
+
+-- FOV Circle
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Radius = 80
+FOVCircle.Color = Color3.fromRGB(255, 0, 70)
+FOVCircle.Thickness = 1.6
+FOVCircle.NumSides = 16
+FOVCircle.Filled = false
+FOVCircle.Transparency = 0.9
+FOVCircle.Visible = false
+
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + 36)
+end)
+
+local function GetClosest()
+    local closest = nil
+    local dist = getgenv().Aimlock.Radius
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+            if getgenv().Aimlock.TeamCheck and plr.Team == LocalPlayer.Team then continue end
+            local part = plr.Character:FindFirstChild(getgenv().Aimlock.Part) or plr.Character:FindFirstChild("Head")
+            if part then
+                local sp, onscreen = Camera:WorldToViewportPoint(part.Position)
+                if onscreen then
+                    local d = (Vector2.new(sp.X, sp.Y) - Vector2.new(Mouse.X, Mouse.Y + 36)).Magnitude
+                    if d < dist then
+                        dist = d
+                        closest = plr
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+RunService.Heartbeat:Connect(function()
+    if not getgenv().Aimlock.Enabled or not getgenv().Aimlock.Aiming then return end
+
+    Target = GetClosest()
+
+    if getgenv().Aimlock.AliveCheck and Target and Target.Character and Target.Character:FindFirstChild("Humanoid") and Target.Character.Humanoid.Health <= 0 then
+        Target = nil
+    end
+
+    if getgenv().Aimlock.Airshot and Target and Target.Character:FindFirstChild("Humanoid") then
+        if Target.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+            getgenv().Aimlock.Part = "RightFoot"
+        else
+            getgenv().Aimlock.Part = getgenv().Aimlock.OldPart
+        end
+    end
+
+    if Target and Target.Character and Target.Character:FindFirstChild(getgenv().Aimlock.Part) then
+        local pos = Target.Character[getgenv().Aimlock.Part].Position
+        if getgenv().Aimlock.Predict then
+            pos = pos + (Target.Character[getgenv().Aimlock.Part].Velocity / getgenv().Aimlock.Prediction)
+        end
+        if getgenv().Aimlock.Smooth > 0 then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, pos), getgenv().Aimlock.Smooth)
+        else
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, pos)
+        end
+    end
+end)
+
+-- ==================== UI PARA TU VERSIÓN EXACTA (índice como primer argumento) ====================
+
+local AimBox = Tabs.Combat:AddLeftGroupbox("Aimlock", "sword")
+
+-- Toggle principal + KeyPicker encadenado (esto sí funciona en tu versión)
+AimBox:AddToggle("AimlockEnabled", {  -- ← Aquí va el índice
+    Text = "Aimlock Master",
+    Default = false,
+    Tooltip = "Activa el aimlock",
+    Callback = function(v)
+        getgenv().Aimlock.Enabled = v
+    end
+}):AddKeyPicker("AimlockKey", {  -- ← Aquí va el índice del KeyPicker
+    Default = "B",
+    SyncToggleState = true,
+    Mode = "Toggle",
+    Text = "Aimlock Key",
+    Callback = function(v)
+        getgenv().Aimlock.Aiming = v
+    end
+})
+
+AimBox:AddDropdown("AimPart", {
+    Values = {"Head", "UpperTorso", "HumanoidRootPart", "LowerTorso"},
+    Default = 1,
+    Text = "Aim Part",
+    Callback = function(v)
+        getgenv().Aimlock.Part = v
+        getgenv().Aimlock.OldPart = v
+    end
+})
+
+AimBox:AddToggle("TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) getgenv().Aimlock.TeamCheck = v end })
+AimBox:AddToggle("AliveCheck", { Text = "Alive Check", Default = false, Callback = function(v) getgenv().Aimlock.AliveCheck = v end })
+AimBox:AddToggle("Prediction", { Text = "Prediction", Default = false, Callback = function(v) getgenv().Aimlock.Predict = v end })
+AimBox:AddToggle("Airshot", { Text = "Airshot Function", Default = false, Callback = function(v) getgenv().Aimlock.Airshot = v end })
+
+AimBox:AddSlider("Smoothness", {
+    Text = "Smoothness",
+    Default = 0,
+    Min = 0,
+    Max = 1,
+    Rounding = 2,
+    Callback = function(v)
+        getgenv().Aimlock.Smooth = v
+    end
+})
+
+AimBox:AddSlider("PredictionPower", {
+    Text = "Prediction Movement",
+    Default = 0,
+    Min = 0,
+    Max = 50,
+    Rounding = 1,
+    Callback = function(v)
+        getgenv().Aimlock.Prediction = v
+    end
+})
+
+-- FOV
+local FOVBox = Tabs.Combat:AddRightGroupbox("FOV", "circle")
+
+FOVBox:AddToggle("ShowFOV", {
+    Text = "Show FOV Circle",
+    Default = false,
+    Callback = function(v)
+        FOVCircle.Visible = v
+    end
+})
+
+FOVBox:AddSlider("FOVSize", {
+    Text = "FOV Radius",
+    Default = 0,
+    Min = 0,
+    Max = 300,
+    Rounding = 1,
+    Callback = function(v)
+        getgenv().Aimlock.Radius = v
+        FOVCircle.Radius = v
+    end
+})
+
+FOVBox:AddLabel("FOV Color"):AddColorPicker("FOVColor", {
+    Default = Color3.fromRGB(255, 0, 70),
+    Callback = function(v)
+        FOVCircle.Color = v
+    end
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- HARDLOCK EXTREME V4 - SOLDADO 100% (NO SE MUEVE NI 1 PIXEL) - OBSIDIAN LIBRARY
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+getgenv().Hardlock = {
+    Enabled = false,
+    Aiming = false,
+    Key = "z",
+    Part = "Head",
+    FOV = 100,
+    Predict = true,
+    Airshot = true,
+    TeamCheck = false
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+local Target = nil
+local LockConnection = nil
+local MouseLocked = false
+
+-- FOV Circle para Hardlock
+local HardlockFOVCircle = Drawing.new("Circle")
+HardlockFOVCircle.Visible = false
+HardlockFOVCircle.Thickness = 2
+HardlockFOVCircle.Color = Color3.fromRGB(255, 0, 50)
+HardlockFOVCircle.Filled = false
+HardlockFOVCircle.Radius = getgenv().Hardlock.FOV
+HardlockFOVCircle.Transparency = 0.8
+
+RunService.RenderStepped:Connect(function()
+    HardlockFOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + 36)
+    HardlockFOVCircle.Radius = getgenv().Hardlock.FOV
+end)
+
+local function GetClosestPlayer()
+    local closest = nil
+    local shortestDistance = getgenv().Hardlock.FOV
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr == LocalPlayer then continue end
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then continue end
+        if not plr.Character:FindFirstChild("Humanoid") or plr.Character.Humanoid.Health <= 0 then continue end
+        if getgenv().Hardlock.TeamCheck and plr.Team == LocalPlayer.Team then continue end
+        
+        local part = plr.Character:FindFirstChild(getgenv().Hardlock.Part) or plr.Character.Head
+        if not part then continue end
+        
+        local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+        if not onScreen then continue end
+        
+        local distance = (Vector2.new(Mouse.X, Mouse.Y + 36) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+        if distance < shortestDistance then
+            shortestDistance = distance
+            closest = plr
+        end
+    end
+    return closest
+end
+
+local function HardlockLoop()
+    if not MouseLocked or not Target or not Target.Character then return end
+   
+    local char = Target.Character
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then
+        MouseLocked = false
+        return
+    end
+    
+    local part = char:FindFirstChild(getgenv().Hardlock.Part) or char.Head
+    if not part then return end
+    
+    -- Airshot
+    if getgenv().Hardlock.Airshot and humanoid.FloorMaterial == Enum.Material.Air then
+        part = char:FindFirstChild("LowerTorso") or char:FindFirstChild("UpperTorso") or part
+    end
+    
+    local velocity = part.AssemblyLinearVelocity
+    local prediction = getgenv().Hardlock.Predict and (velocity * 0.135) or Vector3.new(0, 0, 0)
+    local targetPos = part.Position + prediction + Vector3.new(0, 0.12, 0)
+    
+    local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPos)
+    if not onScreen then return end
+    
+    local target2D = Vector2.new(screenPoint.X, screenPoint.Y)
+    local mouse2D = Vector2.new(Mouse.X, Mouse.Y + 36)
+    local difference = target2D - mouse2D
+    local distance = difference.Magnitude
+    
+    -- DEADZONE + SMOOTH CONTROLADO (LA CLAVE DEL SOLDADO)
+    if distance < 6 then return end
+    
+    local moveX = difference.X * 0.22
+    local moveY = difference.Y * 0.16
+    
+    moveX = math.clamp(moveX, -11, 11)
+    moveY = math.clamp(moveY, -10, 10)
+    
+    -- APLICACIÓN EN PASOS PEQUEÑOS (SOLDADO ESTABLE)
+    mousemoverel(moveX, moveY)
+    mousemoverel(moveX * 0.8, moveY * 0.7)
+    mousemoverel(moveX * 0.5, moveY * 0.4)
+    
+    -- KILL DRIFT HORIZONTAL
+    if math.abs(difference.X) > 10 then
+        mousemoverel(math.clamp(difference.X * 0.65, -15, 15), 0)
+    end
+end
+
+local function StartLock()
+    Target = GetClosestPlayer()
+    if not Target then return end
+    MouseLocked = true
+    if LockConnection then LockConnection:Disconnect() end
+    LockConnection = RunService.RenderStepped:Connect(HardlockLoop)
+end
+
+local function StopLock()
+    MouseLocked = false
+    if LockConnection then
+        LockConnection:Disconnect()
+        LockConnection = nil
+    end
+    Target = nil
+end
+
+-- Key Input (convierte string a KeyCode)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    local keyName = getgenv().Hardlock.Key:upper()
+    local keyCode = Enum.KeyCode[keyName]
+    
+    if keyCode and input.KeyCode == keyCode and getgenv().Hardlock.Enabled then
+        if MouseLocked then
+            StopLock()
+        else
+            StartLock()
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- UI HARDLOCK - OBSIDIAN LIBRARY (ÍNDICES COMO PRIMER ARGUMENTO)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local HardlockBox = Tabs.Combat:AddRightGroupbox("Hardlock Extreme V4", "mouse")
+
+-- Toggle principal + KeyPicker encadenado
+HardlockBox:AddToggle("HardlockEnabled", {
+    Text = "Hardlock - (No Work)",
+    Default = false,
+    Tooltip = "Mouse lock SOLDADO (no se mueve 1 pixel)",
+    Callback = function(state)
+        getgenv().Hardlock.Enabled = state
+        if not state then
+            StopLock()
+        end
+    end
+}):AddKeyPicker("HardlockKeybind", {
+    Default = "Z",
+    SyncToggleState = true,
+    Mode = "Toggle",
+    Text = "Hardlock Key",
+    Tooltip = "Tecla para hardlock",
+    Callback = function(Value)
+        -- Toggle funciona automáticamente con SyncToggleState
+    end
+})
+
+HardlockBox:AddDropdown("HardlockPart", {
+    Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+    Default = 1,  -- Head
+    Text = "Target Part",
+    Tooltip = "Parte del cuerpo",
+    Callback = function(part)
+        getgenv().Hardlock.Part = part
+    end
+})
+
+HardlockBox:AddToggle("HardlockPredict", {
+    Text = "Prediction",
+    Default = true,
+    Tooltip = "Predicción de movimiento",
+    Callback = function(state)
+        getgenv().Hardlock.Predict = state
+    end
+})
+
+HardlockBox:AddToggle("HardlockAirshot", {
+    Text = "Airshot Function",
+    Default = true,
+    Tooltip = "Aim torso si salta",
+    Callback = function(state)
+        getgenv().Hardlock.Airshot = state
+    end
+})
+
+HardlockBox:AddToggle("HardlockTeamCheck", {
+    Text = "Team Check",
+    Default = false,
+    Tooltip = "No lock teammates",
+    Callback = function(state)
+        getgenv().Hardlock.TeamCheck = state
+    end
+})
+
+HardlockBox:AddSlider("HardlockFOV", {
+    Text = "FOV Size",
+    Default = 0,
+    Min = 0,
+    Max = 100,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().Hardlock.FOV = value
+    end
+})
+
+HardlockBox:AddDivider()
+
+HardlockBox:AddToggle("HardlockShowFOV", {
+    Text = "Show FOV Circle",
+    Default = false,
+    Tooltip = "Muestra círculo FOV",
+    Callback = function(state)
+        HardlockFOVCircle.Visible = state
+    end
+})
+
+HardlockBox:AddLabel("FOV Color"):AddColorPicker("HardlockFOVColor", {
+    Default = Color3.fromRGB(255, 0, 50),
+    Title = "Hardlock FOV Color",
+    Callback = function(color)
+        HardlockFOVCircle.Color = color
+    end
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- NYX EXOTIC 2025 - HITBOX EXPANDER 100% ORIGINAL + OBSIDIAN (SOLO PC)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables originales (100% igual que tu script)
+local hitboxEnabled = false
+local hitboxSize = 5
+local selectedPart = "Head"
+local connection = nil
+local originalData = {}
+
+local availableParts = {"Head", "UpperTorso", "RightUpperLeg", "LeftUpperLeg", "RightFoot", "LeftFoot"}
+
+-- ======================= FUNCIONES 100% ORIGINALES (NO CAMBIÉ NADA) =======================
+local function expand()
+    for _, plr in Players:GetPlayers() do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild(selectedPart) then
+            local part = plr.Character[selectedPart]
+            if part and part:IsA("BasePart") then
+                if not originalData[plr] then
+                    originalData[plr] = {
+                        Size = part.Size,
+                        Transparency = part.Transparency,
+                        CanCollide = part.CanCollide,
+                        Massless = part.Massless
+                    }
+                end
+                part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+                part.Transparency = 0.6
+                part.CanCollide = false
+                part.Massless = true
+            end
+        end
+    end
+end
+
+local function restoreAll()
+    for plr, data in pairs(originalData) do
+        if plr.Character and plr.Character:FindFirstChild(selectedPart) then
+            local part = plr.Character[selectedPart]
+            if part then
+                part.Size = data.Size
+                part.Transparency = data.Transparency
+                part.CanCollide = data.CanCollide
+                part.Massless = data.Massless
+            end
+        end
+    end
+    originalData = {}
+end
+
+-- ======================= OBSIDIAN - SOLO PARA PC =======================
+local HitboxBox = Tabs.Combat:AddRightGroupbox("NYX Hitbox Expander", "target")
+
+-- Toggle principal (PC)
+HitboxBox:AddToggle("HitboxPC", {
+    Text = "Hitbox Expander",
+    Default = false,
+    Tooltip = "NYX EXOTIC 2025 - Bypass Byfron",
+    Callback = function(state)
+        hitboxEnabled = state
+
+        if hitboxEnabled then
+            if connection then connection:Disconnect() end
+            connection = RunService.Heartbeat:Connect(expand)
+            Library:Notify("NYX Hitbox ➜ ON", 3)
+        else
+            if connection then connection:Disconnect() connection = nil end
+            restoreAll()
+            Library:Notify("NYX Hitbox ➜ OFF", 3)
+        end
+    end
+})
+
+-- Dropdown para cambiar parte
+HitboxBox:AddDropdown("HitboxPart", {
+    Values = availableParts,
+    Default = 1,
+    Text = "Body Part",
+    Callback = function(part)
+        if hitboxEnabled then
+            restoreAll()
+            selectedPart = part
+            task.wait(0.05)
+            expand()
+        else
+            selectedPart = part
+        end
+        Library:Notify("Parte: " .. part, 2)
+    end
+})
+
+-- Slider para tamaño
+HitboxBox:AddSlider("HitboxSize", {
+    Text = "Size",
+    Default = 0,
+    Min = 0,
+    Max = 50,
+    Rounding = 1,
+    Callback = function(value)
+        hitboxSize = value
+        if hitboxEnabled then
+            task.spawn(expand)
+        end
+    end
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- 2D RADAR (Blissful#4992) - ADAPTADO A OBSIDIAN LIBRARY (VISUALS TAB)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
+
+-- Cargar módulo de lerp color
+local LerpColorModule = loadstring(game:HttpGet("https://pastebin.com/raw/wRnsJeid"))()
+local HealthBarLerp = LerpColorModule:Lerp(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0))
+
+-- Configuración del radar
+getgenv().Radar = {
+    Enabled = false,
+    Position = Vector2.new(200, 200),
+    Radius = 100,
+    Scale = 1,
+    TeamCheck = true,
+    HealthColor = true
+}
+
+-- Drawing objects
+local RadarBackground = Drawing.new("Circle")
+local RadarBorder = Drawing.new("Circle")
+local LocalPlayerDot = Drawing.new("Triangle")
+local Dots = {}
+
+-- Crear círculo
+local function NewCircle(transparency, color, radius, filled, thickness)
+    local c = Drawing.new("Circle")
+    c.Transparency = transparency
+    c.Color = color
+    c.Thickness = thickness or 2
+    c.Filled = filled
+    c.Visible = false
+    c.Radius = radius
+    c.NumSides = math.clamp(radius * 0.55, 10, 75)
+    return c
+end
+
+-- Crear punto de jugador
+local function CreatePlayerDot()
+    local dot = Drawing.new("Circle")
+    dot.Radius = 3
+    dot.Thickness = 1
+    dot.Filled = true
+    dot.Visible = false
+    return dot
+end
+
+-- Actualizar radar
+local function UpdateRadar()
+    RadarBackground.Visible = getgenv().Radar.Enabled
+    RadarBorder.Visible = getgenv().Radar.Enabled
+    LocalPlayerDot.Visible = getgenv().Radar.Enabled
+
+    if not getgenv().Radar.Enabled then
+        for _, dot in pairs(Dots) do
+            dot.Visible = false
+        end
+        return
+    end
+
+    RadarBackground.Position = getgenv().Radar.Position
+    RadarBackground.Radius = getgenv().Radar.Radius
+    RadarBackground.Color = Color3.fromRGB(10, 10, 10)
+    RadarBackground.Transparency = 0.9
+    RadarBackground.Filled = true
+
+    RadarBorder.Position = getgenv().Radar.Position
+    RadarBorder.Radius = getgenv().Radar.Radius
+    RadarBorder.Color = Color3.fromRGB(75, 75, 75)
+    RadarBorder.Transparency = 0.75
+    RadarBorder.Filled = false
+    RadarBorder.Thickness = 3
+
+    -- Triángulo del local player
+    LocalPlayerDot.Color = Color3.fromRGB(255, 255, 255)
+    LocalPlayerDot.PointA = getgenv().Radar.Position + Vector2.new(0, -6)
+    LocalPlayerDot.PointB = getgenv().Radar.Position + Vector2.new(-4, 6)
+    LocalPlayerDot.PointC = getgenv().Radar.Position + Vector2.new(4, 6)
+    LocalPlayerDot.Filled = true
+    LocalPlayerDot.Thickness = 1
+end
+
+-- Función relativa
+local function GetRelative(pos)
+    local char = LocalPlayer.Character
+    if char and char.PrimaryPart then
+        local pmpart = char.PrimaryPart
+        local camerapos = Vector3.new(Camera.CFrame.Position.X, pmpart.Position.Y, Camera.CFrame.Position.Z)
+        local newcf = CFrame.new(pmpart.Position, camerapos)
+        local r = newcf:PointToObjectSpace(pos)
+        return r.X, r.Z
+    end
+    return 0, 0
+end
+
+-- Actualizar dots
+RunService.RenderStepped:Connect(function()
+    if not getgenv().Radar.Enabled then return end
+
+    for plr, dot in pairs(Dots) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.PrimaryPart and plr.Character.Humanoid.Health > 0 then
+            local hum = plr.Character.Humanoid
+            local relx, rely = GetRelative(plr.Character.PrimaryPart.Position)
+            local newpos = getgenv().Radar.Position - Vector2.new(relx * getgenv().Radar.Scale, rely * getgenv().Radar.Scale)
+
+            local distance = (newpos - getgenv().Radar.Position).Magnitude
+            if distance < getgenv().Radar.Radius - 2 then
+                dot.Position = newpos
+                dot.Radius = 3
+                dot.Visible = true
+            else
+                local calc = (getgenv().Radar.Position - newpos).Unit * (distance - getgenv().Radar.Radius)
+                dot.Position = newpos + calc
+                dot.Radius = 2
+                dot.Visible = true
+            end
+
+            -- Color
+            if getgenv().Radar.TeamCheck and plr.Team == LocalPlayer.Team then
+                dot.Color = Color3.fromRGB(0, 255, 0)
+            elseif getgenv().Radar.HealthColor then
+                dot.Color = HealthBarLerp(hum.Health / hum.MaxHealth)
+            else
+                dot.Color = Color3.fromRGB(255, 0, 0)
+            end
+        else
+            dot.Visible = false
+        end
+    end
+end)
+
+-- Crear dots para jugadores existentes
+for _, plr in pairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        Dots[plr] = CreatePlayerDot()
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then
+        Dots[plr] = CreatePlayerDot()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if Dots[plr] then
+        Dots[plr]:Remove()
+        Dots[plr] = nil
+    end
+end)
+
+-- Draggable
+local draggingRadar = false
+local dragOffset = Vector2.new()
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local mousePos = Vector2.new(Mouse.X, Mouse.Y + 36)
+        if (mousePos - getgenv().Radar.Position).Magnitude < getgenv().Radar.Radius then
+            draggingRadar = true
+            dragOffset = getgenv().Radar.Position - mousePos
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingRadar = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if draggingRadar and input.UserInputType == Enum.UserInputType.MouseMovement then
+        getgenv().Radar.Position = Vector2.new(Mouse.X, Mouse.Y + 36) + dragOffset
+        UpdateRadar()
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- UI - OBSIDIAN (VISUALS TAB)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local RadarBox = Tabs.Visuals:AddLeftGroupbox("2D Radar", "radar")
+
+RadarBox:AddToggle("RadarEnabled", {
+    Text = "Enable 2D Radar",
+    Default = false,
+    Callback = function(state)
+        getgenv().Radar.Enabled = state
+        UpdateRadar()
+        Library:Notify(state and "2D Radar Activado" or "2D Radar Desactivado", 3)
+    end
+})
+
+RadarBox:AddSlider("RadarSize", {
+    Text = "Radar Size",
+    Min = 50,
+    Max = 300,
+    Default = 100,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().Radar.Radius = value
+        UpdateRadar()
+    end
+})
+
+RadarBox:AddToggle("RadarTeamCheck", {
+    Text = "Team Check",
+    Default = true,
+    Callback = function(state)
+        getgenv().Radar.TeamCheck = state
+    end
+})
+
+RadarBox:AddToggle("RadarHealthColor", {
+    Text = "Health-Based Color",
+    Default = true,
+    Callback = function(state)
+        getgenv().Radar.HealthColor = state
+    end
+})
+
+-- Inicializar
+UpdateRadar()
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- OFFSCREEN ARROWS (Blissful#4992) - ADAPTADO A OBSIDIAN LIBRARY (VISUALS TAB)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+getgenv().OffscreenArrows = {
+    Enabled = false,
+    Distance = 80,
+    Size = 16,
+    Filled = true,
+    Transparency = 0,
+    Thickness = 1,
+    Color = Color3.fromRGB(255, 255, 255),
+    TeamCheck = true
+}
+
+local Arrows = {}
+
+local function CreateArrow()
+    local arrow = Drawing.new("Triangle")
+    arrow.Filled = getgenv().OffscreenArrows.Filled
+    arrow.Thickness = getgenv().OffscreenArrows.Thickness
+    arrow.Transparency = 1 - getgenv().OffscreenArrows.Transparency
+    arrow.Color = getgenv().OffscreenArrows.Color
+    arrow.Visible = false
+    return arrow
+end
+
+local function GetRelative(pos)
+    local char = LocalPlayer.Character
+    if not char or not char.PrimaryPart then return Vector2.new(0, 0) end
+    local root = char.PrimaryPart.Position
+    local camPos = Camera.CFrame.Position
+    local relative = CFrame.new(Vector3.new(root.X, camPos.Y, root.Z), camPos):PointToObjectSpace(pos)
+    return Vector2.new(relative.X, relative.Z)
+end
+
+local function RelativeToCenter(v)
+    return Camera.ViewportSize / 2 - v
+end
+
+local function RotateVector(v, angle)
+    local rad = math.rad(angle)
+    local cos = math.cos(rad)
+    local sin = math.sin(rad)
+    return Vector2.new(v.X * cos - v.Y * sin, v.X * sin + v.Y * cos)
+end
+
+local function UpdateArrows()
+    if not getgenv().OffscreenArrows.Enabled then
+        for _, arrow in pairs(Arrows) do
+            arrow.Visible = false
+        end
+        return
+    end
+
+    for plr, arrow in pairs(Arrows) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.PrimaryPart and plr.Character.Humanoid.Health > 0 then
+            local rootPos = plr.Character.PrimaryPart.Position
+            local _, onScreen = Camera:WorldToViewportPoint(rootPos)
+
+            if not onScreen then
+                local rel = GetRelative(rootPos)
+                local direction = rel.Unit
+                local dist = getgenv().OffscreenArrows.Distance
+                local size = getgenv().OffscreenArrows.Size / 2
+
+                local base = direction * dist
+                local left = base + RotateVector(direction, 90) * size
+                local right = base + RotateVector(direction, -90) * size
+                local tip = direction * (dist + getgenv().OffscreenArrows.Size)
+
+                arrow.PointA = RelativeToCenter(left)
+                arrow.PointB = RelativeToCenter(right)
+                arrow.PointC = RelativeToCenter(tip)
+                arrow.Visible = true
+
+                -- Color por equipo
+                if getgenv().OffscreenArrows.TeamCheck and plr.Team == LocalPlayer.Team then
+                    arrow.Color = Color3.fromRGB(0, 255, 0) -- Verde = aliado
+                else
+                    arrow.Color = Color3.fromRGB(255, 0, 0) -- Rojo = enemigo
+                end
+            else
+                arrow.Visible = false
+            end
+        else
+            arrow.Visible = false
+        end
+    end
+end
+
+-- Crear flechas para jugadores
+for _, plr in pairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        Arrows[plr] = CreateArrow()
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then
+        Arrows[plr] = CreateArrow()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if Arrows[plr] then
+        Arrows[plr]:Remove()
+        Arrows[plr] = nil
+    end
+end)
+
+-- Loop principal
+RunService.RenderStepped:Connect(UpdateArrows)
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- UI - OBSIDIAN (VISUALS TAB)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local ArrowsBox = Tabs.Visuals:AddRightGroupbox("Offscreen Arrows", "arrow-up")
+
+ArrowsBox:AddToggle("ArrowsEnabled", {
+    Text = "Offscreen Arrows",
+    Default = false,
+    Tooltip = "Flechas fuera de pantalla",
+    Callback = function(state)
+        getgenv().OffscreenArrows.Enabled = state
+        Library:Notify(state and "Offscreen Arrows Activado" or "Offscreen Arrows Desactivado", 3)
+    end
+})
+
+ArrowsBox:AddSlider("ArrowsDistance", {
+    Text = "Distancia del centro",
+    Min = 50,
+    Max = 200,
+    Default = 80,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().OffscreenArrows.Distance = value
+    end
+})
+
+ArrowsBox:AddSlider("ArrowsSize", {
+    Text = "Tamaño de flecha",
+    Min = 10,
+    Max = 30,
+    Default = 16,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().OffscreenArrows.Size = value
+    end
+})
+
+ArrowsBox:AddToggle("ArrowsTeamCheck", {
+    Text = "Team Check",
+    Default = true,
+    Tooltip = "Verde = aliado, Rojo = enemigo",
+    Callback = function(state)
+        getgenv().OffscreenArrows.TeamCheck = state
+    end
+})
+
+ArrowsBox:AddColorPicker("ArrowsColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Color base",
+    Callback = function(color)
+        getgenv().OffscreenArrows.Color = color
+    end
+})
+
+
+
+
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- SETTINGS
+-- ═══════════════════════════════════════════════════════════════════════════════════
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetFolder("NyxExotic")
+ThemeManager:SetFolder("NyxExotic")
+ThemeManager:ApplyToTab(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Tabs.Settings:AddLeftGroupbox("Menu"):AddToggle("CustomCursor", {
+    Text = "Custom Cursor",
+    Default = true,
+    Callback = function(v) Library.ShowCustomCursor = v end
+})
+Tabs.Settings:AddLeftGroupbox("Menu"):AddLabel("Menu Bind: M (Fixed)")
+Tabs.Settings:AddLeftGroupbox("Menu"):AddButton("Unload", function() Library:Unload() end)
+
+-- Tecla M
+game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
+    if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
+end)
+
+Library:Notify("NYX EXOTIC FULLY LOADED!", 6)
+SaveManager:LoadAutoloadConfig()
