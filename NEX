@@ -2540,5 +2540,5 @@ game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
     if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
 end)
 
-Library:Notify("NYX EXOTIC FULLY LOADED!", 6)
+Library:Notify("¡NYX EXOTIC LOADED!", 6)
 SaveManager:LoadAutoloadConfig()
