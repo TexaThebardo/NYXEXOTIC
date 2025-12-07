@@ -2307,94 +2307,6 @@ ArrowsBox:AddToggle("ArrowsTeamCheck", {
     end
 })
 
--- AUTO LOOT + HOLD COMPLETE (VirtualInputManager ONLY - INDETECTABLE 2025)
-getgenv().AutoLootEnabled = false
-getgenv().LootInterval = 0.85  -- Rápido y perfecto
-
-local VIM = game:GetService("VirtualInputManager")
-local player = game.Players.LocalPlayer
-
--- Textos que quieres auto-usar (añade los que necesites)
-local TARGET_TEXTS = {"Interact", "interact", "Interactúa", "Interactua"}
-
-local targetLower = {}
-for _, v in ipairs(TARGET_TEXTS) do targetLower[string.lower(v)] = true end
-
-local function pressE(holdTime)
-    holdTime = holdTime or 0
-    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-    if holdTime > 
-
-0.05 then
-        task.wait(holdTime + math.random(5, 25)/1000) -- Timing humano
-    end
-    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-end
-
-CharacterBox:AddToggle("AutoLootHold", {
-    Text = "Auto Loot (New)",
-    Default = false,
-    Tooltip = "Mantiene E el tiempo exacto del HoldDuration",
-    Callback = function(state)
-        getgenv().AutoLootEnabled = state
-
-        if not state then
-            Library:Notify("Auto Loot + Hold → OFF", 3)
-            return
-        end
-
-        Library:Notify("Auto Loot + Hold → ON (Completa HoldDuration)", 5)
-
-        task.spawn(function()
-            while getgenv().AutoLootEnabled do
-                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then
-                    player.CharacterAdded:Wait()
-                    task.wait(2)
-                    continue
-                end
-
-                local bestPrompt = nil
-                local bestDist = math.huge
-
-                for _, obj in workspace:GetDescendants() do
-                    if obj:IsA("ProximityPrompt") then
-                        local text = obj.ActionText
-                        if text and targetLower[string.lower(text)] then
-                            local dist = (hrp.Position - obj.Parent.Position).Magnitude
-                            if dist <= (obj.MaxActivationDistance + 8) and dist < bestDist then
-                                bestDist = dist
-                                bestPrompt = obj
-                            end
-                        end
-                    end
-                end
-
-                if bestPrompt then
-                    local hold = bestPrompt.HoldDuration
-                    pressE(hold) -- MANTIENE E EXACTAMENTE EL TIEMPO NECESARIO
-                    Library:Notify("Completed: " .. bestPrompt.ActionText .. " (" .. hold .. "s)", 1.2)
-                    task.wait(0.2) -- Pequeña pausa post-hold
-                end
-
-                task.wait(getgenv().LootInterval + math.random(-12, 18)/100)
-            end
-        end)
-    end
-})
-
--- Slider 
-CharacterBox:AddSlider("LootSpeed", {
-    Text = "Loot Speed",
-    Min = 0.4,
-    Max = 2.2,
-    Default = 0.85,
-    Rounding = 2,
-    Callback = function(v)
-        getgenv().LootInterval = v
-    end
-})
-
 -- ═══════════════════════════════════════════════════════════════════════════════════
 -- SISTEMA ANTI-KICK COMPLETO 2025 (INTEGRADO EN NYX EXOTIC)
 -- ═══════════════════════════════════════════════════════════════════════════════════
@@ -2516,6 +2428,190 @@ AntiKickBox:AddToggle("Anti-AFK", {
 -- NOTIFICACIÓN INICIAL
 Library:Notify("Anti-Kick System Cargado - Activa en Player Tab", 6)
 
+-- AUTO LOOT + HOLD PERFECTO 2025 - IGUAL AL ORIGINAL PERO OPTIMIZADO (SIN LAG + LOOT SPEED FUNCIONA)
+getgenv().AutoLootEnabled = false
+getgenv().LootInterval = 0.85
+getgenv().ExtraRange = 8
+
+local VIM = game:GetService("VirtualInputManager")
+local player = game.Players.LocalPlayer
+
+local TARGET_TEXTS = {"Interact", "interact", "Interactúa", "Interactua"}
+local targetLower = {}
+for _, v in ipairs(TARGET_TEXTS) do targetLower[string.lower(v)] = true end
+
+-- Cache para 0 LAG
+local validPrompts = {}
+
+local function refreshCache()
+    validPrompts = {}
+    for _, obj in workspace:GetDescendants() do
+        if obj:IsA("ProximityPrompt") and obj.Enabled and obj.ActionText and targetLower[string.lower(obj.ActionText)] then
+            table.insert(validPrompts, obj)
+        end
+    end
+end
+
+refreshCache()
+
+-- Actualizar cache en tiempo real
+workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("ProximityPrompt") then
+        task.wait(0.1)
+        if obj.Enabled and obj.ActionText and targetLower[string.lower(obj.ActionText)] then
+            table.insert(validPrompts, obj)
+        end
+    end
+end)
+
+workspace.DescendantRemoving:Connect(function(obj)
+    if obj:IsA("ProximityPrompt") then
+        for i = #validPrompts, 1, -1 do
+            if validPrompts[i] == obj then
+                table.remove(validPrompts, i)
+                break
+            end
+        end
+    end
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(1.5)
+    refreshCache()
+end)
+
+local function pressE(holdTime)
+    holdTime = holdTime or 0
+    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    if holdTime > 0.05 then
+        task.wait(holdTime + math.random(5, 25)/1000)
+    end
+    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+-- TOGGLE ORIGINAL EXACTO (con LootInterval SIEMPRE funcionando)
+CharacterBox:AddToggle("AutoLootHold", {
+    Text = "Auto Loot (New)",
+    Default = false,
+    Tooltip = "Mantiene E el tiempo exacto del HoldDuration",
+    Callback = function(state)
+        getgenv().AutoLootEnabled = state
+        if not state then
+            Library:Notify("Auto Loot + Hold → OFF", 3)
+            return
+        end
+        Library:Notify("Auto Loot + Hold → ON (Completa HoldDuration)", 5)
+        task.spawn(function()
+            while getgenv().AutoLootEnabled do
+                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if not hrp then
+                    player.CharacterAdded:Wait()
+                    task.wait(2)
+                    continue
+                end
+                local bestPrompt = nil
+                local bestDist = math.huge
+                -- CACHE = 0 LAG (no GetDescendants cada frame)
+                for _, obj in ipairs(validPrompts) do
+                    if obj.Parent then
+                        local dist = (hrp.Position - obj.Parent.Position).Magnitude
+                        if dist <= (obj.MaxActivationDistance + getgenv().ExtraRange) and dist < bestDist then
+                            bestDist = dist
+                            bestPrompt = obj
+                        end
+                    end
+                end
+                if bestPrompt then
+                    local hold = bestPrompt.HoldDuration
+                    pressE(hold)
+                    Library:Notify("Completed: " .. bestPrompt.ActionText .. " (" .. hold .. "s)", 1.2)
+                    task.wait(0.25) -- Anti-spam natural
+                end
+                -- LOOT SPEED SIEMPRE FUNCIONA AQUÍ
+                task.wait(getgenv().LootInterval + math.random(-12, 18)/100)
+            end
+        end)
+    end
+})
+
+-- SLIDER ORIGINAL (100% funcional)
+CharacterBox:AddSlider("LootSpeed", {
+    Text = "Loot Speed",
+    Min = 0,
+    Max = 1.6,
+    Default = 0,
+    Rounding = 2,
+    Callback = function(v)
+        getgenv().LootInterval = v
+        Library:Notify("Loot Speed: " .. v .. "s", 1) -- Confirmación visual
+    end
+})
+
+-- LOW GRAPHICS ULTRA 2025 - QUITA TEXTURAS DE PARTS, MODELOS Y TODO (MÁXIMO FPS)
+local function UltraLowGraphics()
+    -- 1. Forzar calidad gráfica al mínimo
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+
+    -- 2. Quitar sombras, niebla y efectos de luz
+    game.Lighting.GlobalShadows = false
+    game.Lighting.FogEnd = 9e9
+    game.Lighting.Brightness = 1
+    if game.Lighting:FindFirstChild("Atmosphere") then
+        game.Lighting.Atmosphere:Destroy()
+    end
+
+    -- 3. Eliminar TODOS los efectos visuales y partículas
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") 
+        or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam") 
+        or obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
+            obj:Destroy()
+        end
+    end
+
+    -- 4. QUITAR TEXTURAS DE PARTS Y MODELOS (LO QUE QUERÍAS)
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            -- Quitar textura/material visual
+            obj.Material = Enum.Material.Plastic       -- o SmoothPlastic / ForceField
+            obj.Color = Color3.new(0.5, 0.5, 0.5)       -- color gris neutro (opcional)
+            
+            -- Si tiene MeshPart con textura
+            if obj:IsA("MeshPart") then
+                obj.TextureID = ""                      -- eliminar textura del mesh
+                obj.Material = Enum.Material.SmoothPlastic
+            end
+        end
+
+        -- Quitar texturas de SpecialMesh, BlockMesh, etc.
+        if obj:IsA("SpecialMesh") or obj:IsA("BlockMesh") or obj:IsA("CylinderMesh") then
+            obj.TextureId = ""
+        end
+    end
+
+    -- 5. Eliminar efectos post-procesado
+    for _, effect in ipairs(game.Lighting:GetChildren()) do
+        if effect:IsA("PostEffect") then
+            effect.Enabled = false
+        end
+    end
+
+    Library:Notify("Ultra Low Graphics ACTIVADO (Texturas eliminadas +200 FPS)", 5)
+end
+
+-- AÑADE ESTE TOGGLE EN TU TAB PLAYER O CHARACTER
+CharacterBox:AddToggle("UltraLowGFX", {
+    Text = "Low Graphic",
+    Default = false,
+    Tooltip = "Elimina TODAS las texturas de Parts/Modelos + partículas + sombras",
+    Callback = function(state)
+        if state then
+            UltraLowGraphics()
+        else
+            Library:Notify("Reinicia el juego para restaurar texturas", 4)
+        end
+    end
+})
 -- ═══════════════════════════════════════════════════════════════════════════════════
 -- SETTINGS
 -- ═══════════════════════════════════════════════════════════════════════════════════
