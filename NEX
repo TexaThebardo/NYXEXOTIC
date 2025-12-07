@@ -1897,7 +1897,7 @@ HitboxBox:AddDropdown("HitboxPart", {
 -- Slider para tamaño
 HitboxBox:AddSlider("HitboxSize", {
     Text = "Size",
-    Default = 0,
+    Default = 5,
     Min = 0,
     Max = 50,
     Rounding = 1,
