@@ -8,9 +8,9 @@ local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "NYX EXOTIC",
+    Title = "NYX EXOTIC (UPD)",
     Icon = 134356507686793,
-    Footer = "Versión: 0.4 ¡Beta! | Press M to open/close",
+    Footer = "Versión: 1.4 ¡Beta! | Press M to open/close",
     AutoShow = false,
     ShowCustomCursor = false,
     NotifySide = "Right"
