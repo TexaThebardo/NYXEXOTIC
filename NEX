@@ -656,16 +656,18 @@ local HIDDEN_TOOLS = {
 
 -- Armas peligrosas → ROJO
 local SPECIAL_TOOLS = {
-    "prl-16", "arp9", "mpx", "honey badger pistol", "ddm4 v7 pistol", "ar pistol",
+    "prl-16", "arp9", "g21s drum" "mpx", "honey badger pistol", "ddm4 v7 pistol", "ar pistol",
     "draco", "tec-9", "mcx", ".308 ar-10", "honey badger", "m&p-15 sport ii",
     "300 blackout", "micro draco", "micro arp", "ak draco", "suppressed mcx",
-    "suppressed arp", "whiteout ar9", "fn57", "g19xext", "machete", "springfieldxd mod",
+    "suppressed arp", "whiteout ar9", "whiteout arp9" "fn57", "g19xext", "machete", "springfieldxd mod",
     ".308 ar-10 drum", "honey badger drum", "m&p-15 sport ii drum",
     "micro draco drum", "300 blackout drum", "micro arp drum", "ak draco drum",
     "tan 300 blk mcx", "springfieldxd drum", "mcx drum", "g19xdrum", "tec-9 drum",
     "fn57drum", "arp drum", "taurus drum", "five seven drum", "five-seven drum",
     "plr-16 drum", "g23 drum", "vp9 drum", "p80 drum", "glocks drum", "draco drum",
-    "glock 20 drum", "hi-point drum", "g22drum"
+    "glock 20 drum", "hi-point drum", "g22drum", "binary black draco",  "binary g17 gen 5",
+    "binary 300 blackout arp", "binary 6in ar9", ddm4 v7 drum",  "mpx drum", "g26 clear drum", 
+    "black micro drac", "arp9 clear drum", "black micro draco"
 }
 
 local hidden = {}
@@ -712,7 +714,7 @@ local function getToolsText(plr)
         end
     end
 
-    local color = hasSpecial and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(230,230,230)
+    local color = hasSpecial and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 50, 50)
 
     if #tools <= 5 then
         return table.concat(tools, ", "), color
