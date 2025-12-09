@@ -649,7 +649,7 @@ local espDrawings = {}
 
 -- Herramientas ocultas
 local HIDDEN_TOOLS = {
-    "empty bag", "marshmallow", "small marshmallow bag", "medium marshmallow bag", "large marshmallow bag" "hot chips", "jason mask", "bandana", "black gloves", 
+    "empty bag", "marshmallow", "small marshmallow bag", "medium marshmallow bag", "large marshmallow bag", "hot chips", "jason mask", "bandana", "black gloves", 
     "potato chips",  "potato", "ghost skull face half mask",
     "black surgical mask", "black surgical", "skimask",
     "flour", "card", "gelatin", "lockpick", "sugar block bag", "crowbar", "water", "fake id", "fist", "phone",
