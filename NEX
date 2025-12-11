@@ -2550,9 +2550,6 @@ AntiKickBox:AddToggle("Anti-AFK", {
     end
 })
 
--- NOTIFICACIÓN INICIAL
-Library:Notify("Anti-Kick System Cargado - Activa en Player Tab", 6)
-
 -- LOW GRAPHICS ULTRA 2025 - QUITA TEXTURAS DE PARTS, MODELOS Y TODO (MÁXIMO FPS)
 local function UltraLowGraphics()
     -- 1. Forzar calidad gráfica al mínimo
@@ -2618,7 +2615,6 @@ CharacterBox:AddToggle("UltraLowGFX", {
         end
     end
 })
-
 
 -- ═══════════════════════════════════════════════════════════════════════════════════
 -- SETTINGS
