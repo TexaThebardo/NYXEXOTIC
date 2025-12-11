@@ -8,7 +8,7 @@ local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "NYX EXOTIC (UPD)",
+    Title = "NYX EXOTIC",
     Icon = 99959252308019,
     Footer = "Versión: 1.6 ¡Beta! | Press M to open/close",
     AutoShow = false,
@@ -67,62 +67,37 @@ UpdatePlayers()
 game.Players.PlayerAdded:Connect(UpdatePlayers)
 game.Players.PlayerRemoving:Connect(UpdatePlayers)
 
-local ServerJoiner = Tabs.Main:AddLeftGroupbox("Server Joiner", "server")
-
--- TEXTBOX PARA PEGAR JOB ID
-local JobIDInput = ServerJoiner:AddInput("JobIDInput", {
-    Default = "",
-    Text = "Server joiner",
-    Placeholder = "Ej: abc123def456ghi789",
-    Callback = function() end
-})
-
--- BOTÓN: COPIAR JOB ID ACTUAL
-ServerJoiner:AddButton({
-    Text = "Copy Job ID",
-    Func = function()
-        if game.JobId ~= "" then
-            JobIDInput:SetValue(game.JobId)
-            setclipboard(game.JobId)
-            Library:Notify("Job ID copiado y pegado en el campo", 4)
-        else
-            Library:Notify("Servidor privado - sin Job ID", 4)
-        end
-    end
-})
-
 -- ═══════════════════════════════════════════════════════════════════════════════════
--- SERVER JOINER 
--- ═══════════════════════════════════════════════════════════════════════════════════
+-- CHANGELOG EN HOME (reemplaza Server Joiner) - 100% COMPATIBLE CON TU OBSIDIAN
+-- ════════════════════════════════════════════════════════════════════════════════════
+local ChangelogBox = Tabs.Main:AddLeftGroupbox("Changelog v1.6.9", "scroll-text")
 
-ServerJoiner:AddButton({
-    Text = "Join Server",
-    Func = function()
-        local inputJobID = JobIDInput.Value
-        
-        if inputJobID == "" or inputJobID == "Paste Job ID here" then
-            Library:Notify("Error: Ingresa un Job ID válido", 5)
-            return
-        end
-        
-        if string.len(inputJobID) < 20 then
-            Library:Notify("Error: Job ID inválido (muy corto)", 5)
-            return
-        end
-        
-        Library:Notify("Uniendose al servidor...", 6)
-        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, inputJobID, game.Players.LocalPlayer)
-    end
-})
+ChangelogBox:AddLabel("<font color='#AF42FF'>NYX EXOTIC • 10 Dic 2025</font>", true)
 
--- OPCIONAL: BOTÓN LIMPIAR CAMPO
-ServerJoiner:AddButton({
-    Text = "Clear Field",
-    Func = function()
-        JobIDInput:SetValue("")
-        Library:Notify("Campo limpiado", 2)
-    end
-})
+ChangelogBox:AddDivider()
+
+ChangelogBox:AddLabel("<font color='#00ff8c'>IMPLEMENTED</font>", true)
+ChangelogBox:AddLabel("[+] ", false)
+ChangelogBox:AddLabel("[+] ", false)
+ChangelogBox:AddLabel("[+] ", false)
+
+ChangelogBox:AddDivider()
+
+ChangelogBox:AddLabel("<font color='#ffff64'>FIXED FUNTIONNS</font>", true)
+ChangelogBox:AddLabel("[*] ", false)
+ChangelogBox:AddLabel("[*] ", false)
+ChangelogBox:AddLabel("[*] ", false)
+
+ChangelogBox:AddDivider()
+
+ChangelogBox:AddLabel("<font color='#FF2E2E'>COMING SOON</font>", true)
+ChangelogBox:AddLabel("[∞] ", false)
+ChangelogBox:AddLabel("[∞] ", false)
+ChangelogBox:AddLabel("[∞] ", false)
+
+ChangelogBox:AddDivider()
+
+ChangelogBox:AddLabel("<font color='#ff9bff'>By xSh4dow/NYX</font>", true)
 
 
 -- ═══════════════════════════════════════════════════════════════════════════════════
