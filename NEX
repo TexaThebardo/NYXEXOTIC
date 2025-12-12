@@ -927,92 +927,96 @@ CharacterBox:AddSlider("LootSpeed", {
 -- ==================== VISUALS TAB → ESP V1 (IZQUIERDO) - FINAL & PERFECTO ====================
 local ESPV1Box = Tabs.Visuals:AddLeftGroupbox("ESP V1", "bookmark")
 
--- Configuración
+-- ==================== VARIABLES ====================
 local ESP_Enabled = false
-local CurrentTextSize = 5
+local CurrentTextSize = 18
 local CurrentNameColor = Color3.fromRGB(255, 255, 255)
 local FriendColor = Color3.fromRGB(0, 255, 0)
 local FriendsList = {}
 local ESP_Holders = {}
 
--- Crear ESP para un jugador
+-- ==================== CREAR ESP (LA CLAVE ESTÁ AQUÍ) ====================
 local function CreateESP(plr)
-    if plr == game.Players.LocalPlayer or ESP_Holders[plr] then return end
-    
-    local billboard = Instance.new("BillboardGui")
-    local text = Instance.new("TextLabel")
-    
-    billboard.Name = "NameESP"
-    billboard.Adornee = plr.Character:FindFirstChild("Head")
-    billboard.Size = UDim2.new(0, 100, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = plr.Character
-    
-    text.Size = UDim2.new(1, 0, 1, 0)
-    text.BackgroundTransparency = 1
-    text.Text = plr.DisplayName .. " (@" .. plr.Name .. ")"
-    text.TextColor3 = CurrentNameColor
-    text.TextSize = CurrentTextSize
-    text.Font = Enum.Font.GothamBold
-    text.TextStrokeTransparency = 0
-    text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    text.Parent = billboard
-    
-    ESP_Holders[plr] = billboard
+    if plr == game.Players.LocalPlayer then return end
+    if ESP_Holders[plr] then ESP_Holders[plr]:Destroy() end
+
+    local function MakeESP()
+        if not ESP_Enabled then return end
+        local char = plr.Character
+        if not char or not char:FindFirstChild("Head") then return end
+
+        local billboard = Instance.new("BillboardGui")
+        local text = Instance.new("TextLabel")
+
+        billboard.Name = "NameESP"
+        billboard.Adornee = char.Head
+        billboard.Size = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = char
+
+        text.Size = UDim2.new(1, 0, 1, 0)
+        text.BackgroundTransparency = 1
+        text.Text = plr.DisplayName
+        text.TextSize = CurrentTextSize
+        text.Font = Enum.Font.GothamBold
+        text.TextStrokeTransparency = 0
+        text.TextStrokeColor3 = Color3.new(0,0,0)
+        text.TextColor3 = (table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)) and FriendColor or CurrentNameColor
+        text.Parent = billboard
+
+        ESP_Holders[plr] = billboard
+    end
+
+    -- Crear ahora si ya tiene personaje
+    if plr.Character then MakeESP() end
+
+    -- ¡¡ESTO ES LO QUE HACÍA FALTA!! → Reconectar cada vez que reaparece
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.5)  -- Esperar a que cargue bien el personaje
+        if ESP_Enabled then
+            MakeESP()
+        end
+    end)
 end
 
--- Actualizar todos los ESP
+-- ==================== ACTUALIZAR EN TIEMPO REAL ====================
 local function UpdateESP()
     for plr, holder in pairs(ESP_Holders) do
-        if holder and holder.Parent and plr.Character and plr.Character:FindFirstChild("Head") then
-            local textLabel = holder:FindFirstChild("TextLabel")
-            if textLabel then
-                textLabel.TextSize = CurrentTextSize
-                if table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName) then
-                    textLabel.TextColor3 = FriendColor
-                else
-                    textLabel.TextColor3 = CurrentNameColor
-                end
+        if holder and holder.Parent then
+            local label = holder:FindFirstChild("TextLabel")
+            if label then
+                label.TextSize = CurrentTextSize
+                local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
+                label.TextColor3 = isFriend and FriendColor or CurrentNameColor
             end
         end
     end
 end
 
--- Nuevos jugadores
-game.Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function()
-        if ESP_Enabled then
-            task.wait(1)
-            CreateESP(plr)
-            UpdateESP()
-        end
-    end)
-end)
-
--- Limpiar al salir
-game.Players.PlayerRemoving:Connect(function(plr)
-    if ESP_Holders[plr] then
-        ESP_Holders[plr]:Destroy()
-        ESP_Holders[plr] = nil
-    end
-end)
-
--- TOGGLE + COLORPICKERS (ENCADENADOS) + SLIDER → SIN NOTIFICACIONES
+-- ==================== TOGGLE + COLORPICKERS (TU SINTAXIS EXACTA) ====================
 ESPV1Box:AddToggle("ESPNames", {
     Text = "ESP Names",
     Default = false,
     Callback = function(state)
         ESP_Enabled = state
-        
+
         if state then
-            for _, plr in game.Players:GetPlayers() do
-                if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+            -- Todos los jugadores actuales + futuros
+            for _, plr in ipairs(game.Players:GetPlayers()) do
+                if plr ~= game.Players.LocalPlayer then
                     CreateESP(plr)
                 end
             end
+
+            -- Nuevos jugadores
+            game.Players.PlayerAdded:Connect(function(plr)
+                CreateESP(plr)
+            end)
+
             Library:Notify("ESP Names Activado", 3)
         else
+            -- Apagar todo
             for _, holder in pairs(ESP_Holders) do
                 if holder then holder:Destroy() end
             end
@@ -1025,38 +1029,25 @@ ESPV1Box:AddToggle("ESPNames", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "Normal Name Color",
     Transparency = 0,
-    Callback = function(Value)
-        CurrentNameColor = Value
-        UpdateESP()
-        -- SIN NOTIFICACIÓN
-    end,
+    Callback = function(v) CurrentNameColor = v UpdateESP() end
 })
 :AddColorPicker("FriendColor", {
     Default = Color3.fromRGB(0, 255, 0),
     Title = "Friend Name Color",
     Transparency = 0,
-    Callback = function(Value)
-        FriendColor = Value
-        UpdateESP()
-        -- SIN NOTIFICACIÓN
-    end,
+    Callback = function(v) FriendColor = v UpdateESP() end
 })
 
--- SLIDER DE TAMAÑO (SIN NOTIFICACIÓN)
 ESPV1Box:AddSlider("NameSize", {
     Text = "Name Size",
     Min = 0,
     Max = 100,
     Default = 0,
     Rounding = 1,
-    Callback = function(v)
-        CurrentTextSize = v
-        UpdateESP()
-        -- SIN NOTIFICACIÓN
-    end
+    Callback = function(v) CurrentTextSize = v UpdateESP() end
 })
 
--- SISTEMA DE AMIGOS
+-- ==================== AMIGOS ====================
 local FriendInput = ESPV1Box:AddInput("FriendName", {
     Default = "Ej: xSh4dow",
     Text = "Friend's Name",
@@ -1066,32 +1057,180 @@ local FriendInput = ESPV1Box:AddInput("FriendName", {
 
 ESPV1Box:AddButton("Add Friend", function()
     local name = FriendInput.Value
-    if name and name ~= "" and name ~= "Ej: xSh4dow" then
+    if name ~= "" and name ~= "Ej: xSh4dow" and not table.find(FriendsList, name) then
         table.insert(FriendsList, name)
-        Library:Notify("Amigo añadido: " .. name, 3)
+        Library:Notify("Amigo añadido: "..name, 3)
         UpdateESP()
         FriendInput:SetValue("")
-    else
-        Library:Notify("Nombre inválido", 3)
     end
 end)
 
 ESPV1Box:AddButton("Clear Friends", function()
     FriendsList = {}
-    Library:Notify("Lista de amigos limpiada", 3)
+    Library:Notify("Lista limpiada", 3)
     UpdateESP()
 end)
 
--- Configuración
+-- ==================== CHAMS CORREGIDO - AMIGOS VERDE AL INSTANTE ====================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Chams_Enabled = false
+local Chams_Color = Color3.fromRGB(255, 0, 0)
+local Chams_FriendColor = Color3.fromRGB(0, 255, 0)
+local Chams_Transparency = 0.4
+local FriendsList = {}        -- ← Usa la misma que tu ESP Names (si ya existe, borra esta línea)
+local Chams_Holders = {}
+
+-- Función para aplicar/actualizar chams
+local function ApplyChams(plr)
+    if plr == LocalPlayer or not plr.Character then return end
+
+    local char = plr.Character
+    local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
+    local targetColor = isFriend and Chams_FriendColor or Chams_Color
+
+    -- Si ya tenía chams → solo actualizamos color
+    if Chams_Holders[plr] then
+        for _, hl in pairs(Chams_Holders[plr]) do
+            if hl and hl.Parent then
+                hl.FillColor = targetColor
+                hl.OutlineColor = targetColor
+                hl.FillTransparency = Chams_Transparency
+            end
+        end
+        return
+    end
+
+    -- Si no tenía → creamos nuevos
+    Chams_Holders[plr] = {}
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local hl = Instance.new("Highlight")
+            hl.FillColor = targetColor
+            hl.OutlineColor = targetColor
+            hl.FillTransparency = Chams_Transparency
+            hl.OutlineTransparency = 0
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.Parent = part
+            table.insert(Chams_Holders[plr], hl)
+        end
+    end
+end
+
+-- Crear chams + reconectar al morir
+local function CreateChams(plr)
+    if plr == LocalPlayer then return end
+    ApplyChams(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.6)
+        if Chams_Enabled then ApplyChams(plr) end
+    end)
+end
+
+-- ==================== UI CHAMS ====================
+ESPV1Box:AddToggle("Chams", {
+    Text = "Chams",
+    Default = false,
+    Callback = function(state)
+        Chams_Enabled = state
+        if state then
+            for _, plr in Players:GetPlayers() do CreateChams(plr) end
+            Players.PlayerAdded:Connect(CreateChams)
+            Library:Notify("Chams Activados", 3)
+        else
+            for _, t in pairs(Chams_Holders) do
+                for _, hl in pairs(t) do if hl then hl:Destroy() end end
+            end
+            Chams_Holders = {}
+            Library:Notify("Chams Desactivados", 3)
+        end
+    end
+})
+:AddColorPicker("ChamsColor", {
+    Default = Color3.fromRGB(255, 0, 0),
+    Title = "Chams Color",
+    Transparency = 0,
+    Callback = function(v)
+        Chams_Color = v
+        for _, plr in Players:GetPlayers() do
+            if plr ~= LocalPlayer then ApplyChams(plr) end
+        end
+    end
+})
+:AddColorPicker("ChamsFriendColor", {
+    Default = Color3.fromRGB(0, 255, 0),
+    Title = "Friend Chams Color",
+    Transparency = 0,
+    Callback = function(v)
+        Chams_FriendColor = v
+        for _, plr in Players:GetPlayers() do
+            if plr ~= LocalPlayer then ApplyChams(plr) end
+        end
+    end
+})
+
+ESPV1Box:AddSlider("ChamsTransparency", {
+    Text = "Chams Transparency",
+    Min = 0,
+    Max = 100,
+    Default = 0,
+    Rounding = 5,
+    Callback = function(v)
+        Chams_Transparency = v / 100
+        for _, plr in Players:GetPlayers() do
+            if plr ~= LocalPlayer then ApplyChams(plr) end
+        end
+    end
+})
+
+-- ==================== AMIGOS (AHORA SÍ SE PONE VERDE AL INSTANTE) ====================
+local FriendInput = ESPV1Box:AddInput("FriendName", {
+    Default = "Ej: xSh4dow",
+    Text = "Add Friend",
+    Placeholder = "Name or DisplayName",
+    Callback = function() end
+})
+
+ESPV1Box:AddButton("Add Friend", function()
+    local name = FriendInput.Value
+    if name ~= "" and name ~= "Ej: xSh4dow" and not table.find(FriendsList, name) then
+        table.insert(FriendsList, name)
+        Library:Notify("Amigo añadido: " .. name, 3)
+
+        -- ESTO ES LO QUE HACÍA FALTA → recorre todos los jugadores y actualiza al instante
+        for _, plr in Players:GetPlayers() do
+            if plr.Name == name or plr.DisplayName == name then
+                ApplyChams(plr)
+            end
+        end
+
+        FriendInput:SetValue("")
+    else
+        Library:Notify("Invalid or already added name", 3)
+    end
+end)
+
+ESPV1Box:AddButton("Clear Friends", function()
+    FriendsList = {}
+    Library:Notify("Lista limpiada", 3)
+    for _, plr in Players:GetPlayers() do ApplyChams(plr) end
+end)
+
+-- ==================== ESP BOX ULTRA OPTIMIZADO (SOLO LO ESENCIAL) ====================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
 local BoxESP_Enabled = false
 local BoxColor = Color3.fromRGB(255, 255, 255)
 local BoxThickness = 2
+local ESPBoxes = {}  -- [player] = Drawing Square
 
-local ESPBoxes = {}  -- [player] = box
-
--- Crear caja para un jugador
+-- Crear caja una sola vez por jugador
 local function CreateBox(plr)
-    if plr == game.Players.LocalPlayer or ESPBoxes[plr] then return end
+    if plr == LocalPlayer or ESPBoxes[plr] then return end
 
     local box = Drawing.new("Square")
     box.Visible = false
@@ -1103,34 +1242,49 @@ local function CreateBox(plr)
     ESPBoxes[plr] = box
 end
 
--- Loop principal
-game:GetService("RunService").RenderStepped:Connect(function()
+-- Limpiar al salir del servidor
+Players.PlayerRemoving:Connect(function(plr)
+    if ESPBoxes[plr] then
+        ESPBoxes[plr]:Remove()
+        ESPBoxes[plr] = nil
+    end
+end)
+
+-- Crear cajas para jugadores actuales y futuros
+for _, plr in Players:GetPlayers() do
+    if plr ~= LocalPlayer then CreateBox(plr) end
+end
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then CreateBox(plr) end
+end)
+
+-- LOOP PRINCIPAL OPTIMIZADO (0 lag)
+RunService.RenderStepped:Connect(function()
     if not BoxESP_Enabled then
-        for _, box in pairs(ESPBoxes) do
-            box.Visible = false
-        end
+        for _, box in ESPBoxes do box.Visible = false end
         return
     end
 
-    for plr, box in pairs(ESPBoxes) do
-        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") or not plr.Character:FindFirstChild("Head") then
+    for plr, box in ESPBoxes do
+        local char = plr.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Head") then
             box.Visible = false
             continue
         end
 
-        local headPos = plr.Character.Head.Position
-        local rootPos = plr.Character.HumanoidRootPart.Position
+        local headPos = char.Head.Position + Vector3.new(0, 2.5, 0)
+        local rootPos = char.HumanoidRootPart.Position - Vector3.new(0, 3.5, 0)
 
-        local top = workspace.CurrentCamera:WorldToViewportPoint(headPos + Vector3.new(0, 2, 0))
-        local bottom = workspace.CurrentCamera:WorldToViewportPoint(rootPos - Vector3.new(0, 3, 0))
+        local top, onScreenTop = Camera:WorldToViewportPoint(headPos)
+        local bottom, onScreenBottom = Camera:WorldToViewportPoint(rootPos)
 
-        if top.Z < 0 or bottom.Z < 0 then
+        if not onScreenTop or not onScreenBottom or top.Z < 0 or bottom.Z < 0 then
             box.Visible = false
             continue
         end
 
         local height = math.abs(top.Y - bottom.Y)
-        local width = height * 0.6
+        local width = height * 0.45
 
         box.Size = Vector2.new(width, height)
         box.Position = Vector2.new(top.X - width/2, top.Y)
@@ -1140,24 +1294,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
--- Limpiar al salir
-game.Players.PlayerRemoving:Connect(function(plr)
-    if ESPBoxes[plr] then
-        ESPBoxes[plr]:Remove()
-        ESPBoxes[plr] = nil
-    end
-end)
-
--- Crear para jugadores existentes
-for _, plr in game.Players:GetPlayers() do
-    if plr ~= game.Players.LocalPlayer then CreateBox(plr) end
-end
-
-game.Players.PlayerAdded:Connect(function(plr)
-    if plr ~= game.Players.LocalPlayer then CreateBox(plr) end
-end)
-
--- TOGGLE + COLOR + GROSOR (SIN NOTIFICACIONES EN SLIDER)
+-- ==================== UI - SOLO TOGGLE + COLOR + THICKNESS ====================
 ESPV1Box:AddToggle("BoxOnly", {
     Text = "ESP Box",
     Default = false,
@@ -1172,13 +1309,13 @@ ESPV1Box:AddToggle("BoxOnly", {
     Transparency = 0,
     Callback = function(col)
         BoxColor = col
-    end,
+    end
 })
 
 ESPV1Box:AddSlider("BoxThickness", {
     Text = "Box Thickness",
     Min = 0,
-    Max = 6,
+    Max = 5,
     Default = 0,
     Rounding = 1,
     Callback = function(v)
@@ -1308,184 +1445,495 @@ ESPV1Box:AddDropdown("TracerFrom", {
     end
 })
 
--- ==================== ESP SKELETON (R6 + R15) - 100% CORREGIDO - NUNCA SE QUEDA PEGADO ====================
-local SkeletonESP_Enabled = false
-local SkeletonColor = Color3.fromRGB(255, 255, 255)
-local SkeletonThickness = 2
-local SkeletonLines = {} -- [player] = {lines = {}, index = 1}
+-- ==================== SKELETON ESP FINAL - NUNCA SE QUEDA PEGADO ====================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
--- Crear líneas para un jugador
-local function CreateSkeleton(plr)
-    if plr == game.Players.LocalPlayer or SkeletonLines[plr] then return end
-    local lines = {}
-    for i = 1, 30 do
-        local line = Drawing.new("Line")
-        line.Visible = false
-        line.Color = SkeletonColor
-        line.Thickness = SkeletonThickness
-        line.Transparency = 1
-        table.insert(lines, line)
-    end
-    SkeletonLines[plr] = { lines = lines, index = 1 }
-end
+local Skeleton_Enabled = false
+local Skeleton_Color = Color3.fromRGB(255, 255, 255)
+local Skeleton_Thickness = 2
+local Skeleton_Lines = {}  -- [plr] = {line1, line2, ...}
 
--- Obtener parte compatible R6/R15
+-- Mapeo de huesos (R6 + R15)
+local Bones = {
+    {"Head", {"UpperTorso", "Torso"}},
+    {"UpperTorso", {"LowerTorso", "Torso"}},
+    {"UpperTorso", {"LeftUpperArm", "Left Arm"}},
+    {"LeftUpperArm", {"LeftLowerArm", "Left Arm"}},
+    {"LeftLowerArm", {"LeftHand", "Left Arm"}},
+    {"UpperTorso", {"RightUpperArm", "Right Arm"}},
+    {"RightUpperArm", {"RightLowerArm", "Right Arm"}},
+    {"RightLowerArm", {"RightHand", "Right Arm"}},
+    {"LowerTorso", {"LeftUpperLeg", "Left Leg"}},
+    {"LeftUpperLeg", {"LeftLowerLeg", "Left Leg"}},
+    {"LeftLowerLeg", {"LeftFoot", "Left Leg"}},
+    {"LowerTorso", {"RightUpperLeg", "Right Leg"}},
+    {"RightUpperLeg", {"RightLowerLeg", "Right Leg"}},
+    {"RightLowerLeg", {"RightFoot", "Right Leg"}}
+}
+
 local function GetPart(char, names)
-    if not char then return nil end
     for _, name in ipairs(names) do
         local part = char:FindFirstChild(name)
         if part then return part end
     end
-    return nil
 end
 
--- Dibujar línea segura (la clave para que no se pegue)
-local function DrawLineSafe(plr, part1, part2)
-    local data = SkeletonLines[plr]
-    if not data or not part1 or not part2 then return end
+-- Crear líneas una sola vez
+local function CreateSkeleton(plr)
+    if plr == LocalPlayer or Skeleton_Lines[plr] then return end
 
-    local pos1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
-    local pos2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
-
-    -- Dibujamos SI AL MENOS UNA parte está visible (así nunca se congelan)
-    if onScreen1 or onScreen2 then
-        local line = data.lines[data.index]
-        line.From = Vector2.new(pos1.X, pos1.Y)
-        line.To = Vector2.new(pos2.X, pos2.Y)
-        line.Color = SkeletonColor
-        line.Thickness = SkeletonThickness
-        line.Visible = true
-        data.index = data.index + 1
-        if data.index > #data.lines then data.index = 1 end
+    local lines = {}
+    for i = 1, 14 do
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Color = Skeleton_Color
+        line.Thickness = Skeleton_Thickness
+        line.Transparency = 1
+        table.insert(lines, line)
     end
+    Skeleton_Lines[plr] = {lines = lines, used = 0}
 end
 
--- LOOP PRINCIPAL (CORREGIDO AL 100%)
-game:GetService("RunService").RenderStepped:Connect(function()
-    if not SkeletonESP_Enabled then
-        for _, data in pairs(SkeletonLines) do
+-- Limpiar al salir
+Players.PlayerRemoving:Connect(function(plr)
+    if Skeleton_Lines[plr] then
+        for _, line in pairs(Skeleton_Lines[plr].lines) do
+            line:Remove()
+        end
+        Skeleton_Lines[plr] = nil
+    end
+end)
+
+-- Crear para todos
+for _, plr in Players:GetPlayers() do if plr ~= LocalPlayer then CreateSkeleton(plr) end end
+Players.PlayerAdded:Connect(function(plr) if plr ~= LocalPlayer then CreateSkeleton(plr) end end)
+
+-- LOOP FINAL - NUNCA SE QUEDA PEGADO
+RunService.Heartbeat:Connect(function()
+    if not Skeleton_Enabled then
+        for _, data in pairs(Skeleton_Lines) do
             for _, line in pairs(data.lines) do
                 line.Visible = false
             end
+            data.used = 0
         end
         return
     end
 
-    -- RESETEAR TODAS LAS LÍNEAS CADA FRAME (esto evita que se queden pegadas)
-    for _, data in pairs(SkeletonLines) do
-        for _, line in pairs(data.lines) do
-            line.Visible = false
+    -- Resetear TODAS las líneas cada frame
+    for _, data in pairs(Skeleton_Lines) do
+        for i = 1, data.used do
+            data.lines[i].Visible = false
         end
-        data.index = 1
+        data.used = 0
     end
 
-    for plr, data in pairs(SkeletonLines) do
+    for plr, data in pairs(Skeleton_Lines) do
         local char = plr.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Head") then
             continue
         end
 
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid and humanoid.Health <= 0 then
-            continue
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health <= 0 then continue end
+
+        for _, bone in ipairs(Bones) do
+            local part1 = GetPart(char, {bone[1]})
+            local part2 = GetPart(char, bone[2])
+
+            if part1 and part2 then
+                local screen1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
+                local screen2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
+
+                -- Solo dibujar si al menos una parte está en pantalla
+                if onScreen1 or onScreen2 then
+                    data.used = data.used + 1
+                    if data.used > #data.lines then break end
+
+                    local line = data.lines[data.used]
+                    line.From = Vector2.new(screen1.X, screen1.Y)
+                    line.To = Vector2.new(screen2.X, screen2.Y)
+                    line.Color = Skeleton_Color
+                    line.Thickness = Skeleton_Thickness
+                    line.Visible = true
+                end
+            end
         end
-
-        -- Partes del cuerpo (compatible R6 y R15)
-        local Head           = char.Head
-        local UpperTorso      = GetPart(char, {"UpperTorso", "Torso"})
-        local LowerTorso      = GetPart(char, {"LowerTorso", "Torso"})
-        local LeftUpperArm    = GetPart(char, {"LeftUpperArm", "Left Arm"})
-        local LeftLowerArm    = GetPart(char, {"LeftLowerArm", "Left Arm"})
-        local LeftHand        = GetPart(char, {"LeftHand", "Left Arm"})
-        local RightUpperArm   = GetPart(char, {"RightUpperArm", "Right Arm"})
-        local RightLowerArm   = GetPart(char, {"RightLowerArm", "Right Arm"})
-        local RightHand       = GetPart(char, {"RightHand", "Right Arm"})
-        local LeftUpperLeg    = GetPart(char, {"LeftUpperLeg", "Left Leg"})
-        local LeftLowerLeg    = GetPart(char, {"LeftLowerLeg", "Left Leg"})
-        local LeftFoot        = GetPart(char, {"LeftFoot", "Left Leg"})
-        local RightUpperLeg   = GetPart(char, {"RightUpperLeg", "Right Leg"})
-        local RightLowerLeg   = GetPart(char, {"RightLowerLeg", "Right Leg"})
-        local RightFoot       = GetPart(char, {"RightFoot", "Right Leg"})
-
-        local Hips = LowerTorso or UpperTorso
-
-        -- === DIBUJAR ESQUELETO ===
-        DrawLineSafe(plr, Head, UpperTorso)                    -- Cuello
-        DrawLineSafe(plr, UpperTorso, LowerTorso)              -- Torso
-
-        -- Brazos izquierdos
-        DrawLineSafe(plr, UpperTorso, LeftUpperArm)
-        DrawLineSafe(plr, LeftUpperArm, LeftLowerArm)
-        DrawLineSafe(plr, LeftLowerArm, LeftHand)
-
-        -- Brazos derechos
-        DrawLineSafe(plr, UpperTorso, RightUpperArm)
-        DrawLineSafe(plr, RightUpperArm, RightLowerArm)
-        DrawLineSafe(plr, RightLowerArm, RightHand)
-
-        -- Piernas izquierdas
-        DrawLineSafe(plr, Hips, LeftUpperLeg)
-        DrawLineSafe(plr, LeftUpperLeg, LeftLowerLeg)
-        DrawLineSafe(plr, LeftLowerLeg, LeftFoot)
-
-        -- Piernas derechas
-        DrawLineSafe(plr, Hips, RightUpperLeg)
-        DrawLineSafe(plr, RightUpperLeg, RightLowerLeg)
-        DrawLineSafe(plr, RightLowerLeg, RightFoot)
     end
 end)
 
--- Limpiar al salir del jugador
-game.Players.PlayerRemoving:Connect(function(plr)
-    if SkeletonLines[plr] then
-        for _, line in pairs(SkeletonLines[plr].lines) do
-            line:Remove()
-        end
-        SkeletonLines[plr] = nil
-    end
-end)
-
--- Crear skeleton para jugadores actuales y nuevos
-for _, plr in ipairs(game.Players:GetPlayers()) do
-    if plr ~= game.Players.LocalPlayer then
-        CreateSkeleton(plr)
-    end
-end
-
-game.Players.PlayerAdded:Connect(function(plr)
-    if plr ~= game.Players.LocalPlayer then
-        CreateSkeleton(plr)
-    end
-end)
-
--- ==================== TOGGLES Y CONFIGURACIÓN ====================
+-- ==================== UI - LIMPIO Y FUNCIONAL ====================
 ESPV2Box:AddToggle("SkeletonESP", {
-    Text = "ESP Skeleton (Fix)",
+    Text = "ESP Skeleton",
     Default = false,
-    Callback = function(state)
-        SkeletonESP_Enabled = state
-        Library:Notify(state and "Skeleton ESP Activado" or "Skeleton ESP Desactivado", 3)
+    Callback = function(v)
+        Skeleton_Enabled = v
+        Library:Notify(v and "Skeleton ESP Activado" or "Skeleton ESP Desactivado", 3)
     end
 }):AddColorPicker("SkeletonColor", {
     Default = Color3.fromRGB(255, 255, 255),
-    Title = "Color del Esqueleto",
-    Callback = function(color)
-        SkeletonColor = color
-    end
+    Title = "Skeleton Color",
+    Callback = function(c) Skeleton_Color = c end
 })
 
 ESPV2Box:AddSlider("SkeletonThickness", {
-    Text = "Skeleton Thickness",
+    Text = "Thickness",
     Min = 0,
-    Max = 6,
-    Default = 0,
+    Max = 5,
+    Default = 1,
     Rounding = 1,
-    Callback = function(value)
-        SkeletonThickness = value
+    Callback = function(v) Skeleton_Thickness = v end
+})
+
+-- ══════════════════════════════════════════════════════════════════════════════════
+-- OFFSCREEN ARROWS (Blissful#4992) - ADAPTADO A OBSIDIAN LIBRARY (VISUALS TAB)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+getgenv().OffscreenArrows = {
+    Enabled = false,
+    Distance = 80,
+    Size = 16,
+    Filled = true,
+    Transparency = 0,
+    Thickness = 1,
+    Color = Color3.fromRGB(255, 255, 255),
+    TeamCheck = false
+}
+
+local Arrows = {}
+
+local function CreateArrow()
+    local arrow = Drawing.new("Triangle")
+    arrow.Filled = getgenv().OffscreenArrows.Filled
+    arrow.Thickness = getgenv().OffscreenArrows.Thickness
+    arrow.Transparency = 1 - getgenv().OffscreenArrows.Transparency
+    arrow.Color = getgenv().OffscreenArrows.Color
+    arrow.Visible = false
+    return arrow
+end
+
+local function GetRelative(pos)
+    local char = LocalPlayer.Character
+    if not char or not char.PrimaryPart then return Vector2.new(0, 0) end
+    local root = char.PrimaryPart.Position
+    local camPos = Camera.CFrame.Position
+    local relative = CFrame.new(Vector3.new(root.X, camPos.Y, root.Z), camPos):PointToObjectSpace(pos)
+    return Vector2.new(relative.X, relative.Z)
+end
+
+local function RelativeToCenter(v)
+    return Camera.ViewportSize / 2 - v
+end
+
+local function RotateVector(v, angle)
+    local rad = math.rad(angle)
+    local cos = math.cos(rad)
+    local sin = math.sin(rad)
+    return Vector2.new(v.X * cos - v.Y * sin, v.X * sin + v.Y * cos)
+end
+
+local function UpdateArrows()
+    if not getgenv().OffscreenArrows.Enabled then
+        for _, arrow in pairs(Arrows) do
+            arrow.Visible = false
+        end
+        return
+    end
+
+    for plr, arrow in pairs(Arrows) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.PrimaryPart and plr.Character.Humanoid.Health > 0 then
+            local rootPos = plr.Character.PrimaryPart.Position
+            local _, onScreen = Camera:WorldToViewportPoint(rootPos)
+
+            if not onScreen then
+                local rel = GetRelative(rootPos)
+                local direction = rel.Unit
+                local dist = getgenv().OffscreenArrows.Distance
+                local size = getgenv().OffscreenArrows.Size / 2
+
+                local base = direction * dist
+                local left = base + RotateVector(direction, 90) * size
+                local right = base + RotateVector(direction, -90) * size
+                local tip = direction * (dist + getgenv().OffscreenArrows.Size)
+
+                arrow.PointA = RelativeToCenter(left)
+                arrow.PointB = RelativeToCenter(right)
+                arrow.PointC = RelativeToCenter(tip)
+                arrow.Visible = true
+
+                -- Color por equipo
+                if getgenv().OffscreenArrows.TeamCheck and plr.Team == LocalPlayer.Team then
+                    arrow.Color = Color3.fromRGB(0, 255, 0) -- Verde = aliado
+                else
+                    arrow.Color = Color3.fromRGB(255, 0, 0) -- Rojo = enemigo
+                end
+            else
+                arrow.Visible = false
+            end
+        else
+            arrow.Visible = false
+        end
+    end
+end
+
+-- Crear flechas para jugadores
+for _, plr in pairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        Arrows[plr] = CreateArrow()
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then
+        Arrows[plr] = CreateArrow()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if Arrows[plr] then
+        Arrows[plr]:Remove()
+        Arrows[plr] = nil
+    end
+end)
+
+-- Loop principal
+RunService.RenderStepped:Connect(UpdateArrows)
+
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- UI - OBSIDIAN (VISUALS TAB)
+-- ═══════════════════════════════════════════════════════════════════════════════════
+
+local ArrowsBox = Tabs.Visuals:AddRightGroupbox("Offscreen Arrows", "arrow-up")
+
+ArrowsBox:AddToggle("ArrowsEnabled", {
+    Text = "Offscreen Arrows",
+    Default = false,
+    Tooltip = "Flechas fuera de pantalla",
+    Callback = function(state)
+        getgenv().OffscreenArrows.Enabled = state
+        Library:Notify(state and "Offscreen Arrows Activado" or "Offscreen Arrows Desactivado", 3)
     end
 })
 
+ArrowsBox:AddSlider("ArrowsDistance", {
+    Text = "Distance center",
+    Min = 9,
+    Max = 200,
+    Default = 9,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().OffscreenArrows.Distance = value
+    end
+})
+
+ArrowsBox:AddSlider("ArrowsSize", {
+    Text = "Size Arrow",
+    Min = 0,
+    Max = 60,
+    Default = 0,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().OffscreenArrows.Size = value
+    end
+})
+
+ArrowsBox:AddToggle("ArrowsTeamCheck", {
+    Text = "Team Check",
+    Default = false,
+    Tooltip = "Verde = aliado, Rojo = enemigo",
+    Callback = function(state)
+        getgenv().OffscreenArrows.TeamCheck = state
+    end
+})
+
+-- ==================== HEALTH BAR PRO FINAL - AUTO-SCALE INTELIGENTE ====================
+-- // HEALTH BAR PRO - VERSIÓN FINAL 100% FUNCIONAL (NO COMPACTA)
+-- // Funciona perfecto en todos los executors 2024-2025
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local HealthBarEnabled = false          -- El toggle lo cambia
+local OffsetX = 40                      -- El slider lo cambia
+local Drawings = {}                     -- Guarda los dibujos de cada jugador
+local TargetHeight = {}                 -- Altura objetivo del fill
+local CurrentHeight = {}                -- Altura actual (para animación suave)
+
+-- Función que crea los dibujos para un jugador
+local function CreateHealthBar(player)
+    if player == LocalPlayer then return end
+    if Drawings[player] then return end
+
+    -- Fondo negro
+    local background = Drawing.new("Square")
+    background.Visible = false
+    background.Filled = true
+    background.Color = Color3.new(0, 0, 0)
+    background.Transparency = 0.6
+    background.Thickness = 1
+
+    -- Relleno de vida (verde/amarillo/rojo)
+    local healthFill = Drawing.new("Square")
+    healthFill.Visible = false
+    healthFill.Filled = true
+    healthFill.Color = Color3.fromRGB(0, 255, 0)
+    healthFill.Transparency = 1
+
+    -- Texto del porcentaje
+    local healthText = Drawing.new("Text")
+    healthText.Visible = false
+    healthText.Size = 14
+    healthText.Center = true
+    healthText.Outline = true
+    healthText.Color = Color3.new(1, 1, 1)
+    healthText.Font = 2
+
+    -- Guardamos todo
+    Drawings[player] = {
+        bg = background,
+        fill = healthFill,
+        text = healthText
+    }
+
+    TargetHeight[player] = 0
+    CurrentHeight[player] = 0
+end
+
+-- Crear barras para jugadores que ya están en el server
+for _, player in ipairs(Players:GetPlayers()) do
+    CreateHealthBar(player)
+end
+
+-- Cuando entra un nuevo jugador
+Players.PlayerAdded:Connect(function(player)
+    CreateHealthBar(player)
+end)
+
+-- Cuando sale un jugador, limpiamos sus dibujos
+Players.PlayerRemoving:Connect(function(player)
+    if Drawings[player] then
+        Drawings[player].bg:Remove()
+        Drawings[player].fill:Remove()
+        Drawings[player].text:Remove()
+        Drawings[player] = nil
+        TargetHeight[player] = nil
+        CurrentHeight[player] = nil
+    end
+end)
+
+-- Bucle principal (se ejecuta cada frame)
+RunService.RenderStepped:Connect(function()
+    if not HealthBarEnabled then
+        -- Ocultar todo si está desactivado
+        for _, data in pairs(Drawings) do
+            data.bg.Visible = false
+            data.fill.Visible = false
+            data.text.Visible = false
+        end
+        return
+    end
+
+    for player, objects in pairs(Drawings) do
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then
+            objects.bg.Visible = false
+            objects.fill.Visible = false
+            objects.text.Visible = false
+            CurrentHeight[player] = 0
+            continue
+        end
+
+        local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+        if not torso or not humanoid or humanoid.Health <= 0 then
+            objects.bg.Visible = false
+            objects.fill.Visible = false
+            objects.text.Visible = false
+            CurrentHeight[player] = 0
+            continue
+        end
+
+        local screenPos, onScreen = Camera:WorldToViewportPoint(torso.Position)
+        if not onScreen or screenPos.Z < 0 then
+            objects.bg.Visible = false
+            objects.fill.Visible = false
+            objects.text.Visible = false
+            CurrentHeight[player] = 0
+            continue
+        end
+
+        -- Cálculo de tamaño según distancia
+        local distance = (Camera.CFrame.Position - torso.Position).Magnitude
+        local scaleFactor = math.clamp(150 / distance, 0.5, 2)
+        local barHeight = math.clamp(35 * scaleFactor, 35, 80)
+
+        local healthPercent = humanoid.Health / humanoid.MaxHealth
+        TargetHeight[player] = (barHeight - 4) * healthPercent
+
+        local xPosition = screenPos.X + OffsetX
+        local yPosition = screenPos.Y - barHeight / 2
+
+        -- Fondo negro
+        objects.bg.Position = Vector2.new(xPosition - 3, yPosition)
+        objects.bg.Size = Vector2.new(6, barHeight)
+        objects.bg.Visible = true
+
+        -- Texto del porcentaje
+        objects.text.Text = math.floor(healthPercent * 100) .. "%"
+        objects.text.Position = Vector2.new(xPosition, yPosition - 18)
+        objects.text.Size = math.clamp(12 + scaleFactor * 4, 12, 18)
+        objects.text.Visible = true
+
+        -- Color del fill según vida
+        if healthPercent > 0.6 then
+            objects.fill.Color = Color3.fromRGB(0, 255, 0)   -- Verde
+        elseif healthPercent > 0.3 then
+            objects.fill.Color = Color3.fromRGB(255, 255, 0) -- Amarillo
+        else
+            objects.fill.Color = Color3.fromRGB(255, 0, 0)   -- Rojo
+        end
+
+        -- Animación suave del fill
+        local current = CurrentHeight[player]
+        local newHeight = current + (TargetHeight[player] - current) * 0.25
+        CurrentHeight[player] = newHeight
+
+        objects.fill.Position = Vector2.new(xPosition - 2, yPosition + barHeight - newHeight - 2)
+        objects.fill.Size = Vector2.new(4, newHeight)
+        objects.fill.Visible = true
+    end
+end)
+
+-- TU UI (Kavo, Linoria, etc.) - ESTO ES LO QUE FALTABA
+ESPV2Box:AddToggle("HealthBarPro", {
+    Text = "Health Bar Pro",
+    Default = false,
+    Callback = function(value)
+        HealthBarEnabled = value
+    end
+})
+
+ESPV2Box:AddSlider("HealthDistance", {
+    Text = "Distancia de la barra",
+    Min = 20,
+    Max = 100,
+    Default = 40,
+    Rounding = 1,
+    Callback = function(value)
+        OffsetX = value
+    end
+})
 -- ═══════════════════════════════════════════════════════════════════════════════════
 -- COMBAT & VISUALS (vacíos por ahora)
 -- ═══════════════════════════════════════════════════════════════════════════════════
@@ -2031,404 +2479,6 @@ HitboxBox:AddSlider("HitboxSize", {
         if hitboxEnabled then
             task.spawn(expand)
         end
-    end
-})
-
--- ═══════════════════════════════════════════════════════════════════════════════════
--- 2D RADAR (Blissful#4992) - ADAPTADO A OBSIDIAN LIBRARY (VISUALS TAB)
--- ═══════════════════════════════════════════════════════════════════════════════════
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
-local Camera = workspace.CurrentCamera
-
--- Cargar módulo de lerp color
-local LerpColorModule = loadstring(game:HttpGet("https://pastebin.com/raw/wRnsJeid"))()
-local HealthBarLerp = LerpColorModule:Lerp(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0))
-
--- Configuración del radar
-getgenv().Radar = {
-    Enabled = false,
-    Position = Vector2.new(200, 200),
-    Radius = 100,
-    Scale = 1,
-    TeamCheck = true,
-    HealthColor = true
-}
-
--- Drawing objects
-local RadarBackground = Drawing.new("Circle")
-local RadarBorder = Drawing.new("Circle")
-local LocalPlayerDot = Drawing.new("Triangle")
-local Dots = {}
-
--- Crear círculo
-local function NewCircle(transparency, color, radius, filled, thickness)
-    local c = Drawing.new("Circle")
-    c.Transparency = transparency
-    c.Color = color
-    c.Thickness = thickness or 2
-    c.Filled = filled
-    c.Visible = false
-    c.Radius = radius
-    c.NumSides = math.clamp(radius * 0.55, 10, 75)
-    return c
-end
-
--- Crear punto de jugador
-local function CreatePlayerDot()
-    local dot = Drawing.new("Circle")
-    dot.Radius = 3
-    dot.Thickness = 1
-    dot.Filled = true
-    dot.Visible = false
-    return dot
-end
-
--- Actualizar radar
-local function UpdateRadar()
-    RadarBackground.Visible = getgenv().Radar.Enabled
-    RadarBorder.Visible = getgenv().Radar.Enabled
-    LocalPlayerDot.Visible = getgenv().Radar.Enabled
-
-    if not getgenv().Radar.Enabled then
-        for _, dot in pairs(Dots) do
-            dot.Visible = false
-        end
-        return
-    end
-
-    RadarBackground.Position = getgenv().Radar.Position
-    RadarBackground.Radius = getgenv().Radar.Radius
-    RadarBackground.Color = Color3.fromRGB(10, 10, 10)
-    RadarBackground.Transparency = 0.9
-    RadarBackground.Filled = true
-
-    RadarBorder.Position = getgenv().Radar.Position
-    RadarBorder.Radius = getgenv().Radar.Radius
-    RadarBorder.Color = Color3.fromRGB(75, 75, 75)
-    RadarBorder.Transparency = 0.75
-    RadarBorder.Filled = false
-    RadarBorder.Thickness = 3
-
-    -- Triángulo del local player
-    LocalPlayerDot.Color = Color3.fromRGB(255, 255, 255)
-    LocalPlayerDot.PointA = getgenv().Radar.Position + Vector2.new(0, -6)
-    LocalPlayerDot.PointB = getgenv().Radar.Position + Vector2.new(-4, 6)
-    LocalPlayerDot.PointC = getgenv().Radar.Position + Vector2.new(4, 6)
-    LocalPlayerDot.Filled = true
-    LocalPlayerDot.Thickness = 1
-end
-
--- Función relativa
-local function GetRelative(pos)
-    local char = LocalPlayer.Character
-    if char and char.PrimaryPart then
-        local pmpart = char.PrimaryPart
-        local camerapos = Vector3.new(Camera.CFrame.Position.X, pmpart.Position.Y, Camera.CFrame.Position.Z)
-        local newcf = CFrame.new(pmpart.Position, camerapos)
-        local r = newcf:PointToObjectSpace(pos)
-        return r.X, r.Z
-    end
-    return 0, 0
-end
-
--- Actualizar dots
-RunService.RenderStepped:Connect(function()
-    if not getgenv().Radar.Enabled then return end
-
-    for plr, dot in pairs(Dots) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.PrimaryPart and plr.Character.Humanoid.Health > 0 then
-            local hum = plr.Character.Humanoid
-            local relx, rely = GetRelative(plr.Character.PrimaryPart.Position)
-            local newpos = getgenv().Radar.Position - Vector2.new(relx * getgenv().Radar.Scale, rely * getgenv().Radar.Scale)
-
-            local distance = (newpos - getgenv().Radar.Position).Magnitude
-            if distance < getgenv().Radar.Radius - 2 then
-                dot.Position = newpos
-                dot.Radius = 3
-                dot.Visible = true
-            else
-                local calc = (getgenv().Radar.Position - newpos).Unit * (distance - getgenv().Radar.Radius)
-                dot.Position = newpos + calc
-                dot.Radius = 2
-                dot.Visible = true
-            end
-
-            -- Color
-            if getgenv().Radar.TeamCheck and plr.Team == LocalPlayer.Team then
-                dot.Color = Color3.fromRGB(0, 255, 0)
-            elseif getgenv().Radar.HealthColor then
-                dot.Color = HealthBarLerp(hum.Health / hum.MaxHealth)
-            else
-                dot.Color = Color3.fromRGB(255, 0, 0)
-            end
-        else
-            dot.Visible = false
-        end
-    end
-end)
-
--- Crear dots para jugadores existentes
-for _, plr in pairs(Players:GetPlayers()) do
-    if plr ~= LocalPlayer then
-        Dots[plr] = CreatePlayerDot()
-    end
-end
-
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then
-        Dots[plr] = CreatePlayerDot()
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(plr)
-    if Dots[plr] then
-        Dots[plr]:Remove()
-        Dots[plr] = nil
-    end
-end)
-
--- Draggable
-local draggingRadar = false
-local dragOffset = Vector2.new()
-
-UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local mousePos = Vector2.new(Mouse.X, Mouse.Y + 36)
-        if (mousePos - getgenv().Radar.Position).Magnitude < getgenv().Radar.Radius then
-            draggingRadar = true
-            dragOffset = getgenv().Radar.Position - mousePos
-        end
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingRadar = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if draggingRadar and input.UserInputType == Enum.UserInputType.MouseMovement then
-        getgenv().Radar.Position = Vector2.new(Mouse.X, Mouse.Y + 36) + dragOffset
-        UpdateRadar()
-    end
-end)
-
--- ═══════════════════════════════════════════════════════════════════════════════════
--- UI - OBSIDIAN (VISUALS TAB)
--- ═══════════════════════════════════════════════════════════════════════════════════
-
-local RadarBox = Tabs.Visuals:AddLeftGroupbox("2D Radar", "radar")
-
-RadarBox:AddToggle("RadarEnabled", {
-    Text = "Enable 2D Radar",
-    Default = false,
-    Callback = function(state)
-        getgenv().Radar.Enabled = state
-        UpdateRadar()
-        Library:Notify(state and "2D Radar Activado" or "2D Radar Desactivado", 3)
-    end
-})
-
-RadarBox:AddSlider("RadarSize", {
-    Text = "Radar Size",
-    Min = 0,
-    Max = 350,
-    Default = 0,
-    Rounding = 1,
-    Callback = function(value)
-        getgenv().Radar.Radius = value
-        UpdateRadar()
-    end
-})
-
-RadarBox:AddToggle("RadarTeamCheck", {
-    Text = "Team Check",
-    Default = false,
-    Callback = function(state)
-        getgenv().Radar.TeamCheck = state
-    end
-})
-
-RadarBox:AddToggle("RadarHealthColor", {
-    Text = "Health-Based Color",
-    Default = false,
-    Callback = function(state)
-        getgenv().Radar.HealthColor = state
-    end
-})
-
--- Inicializar
-UpdateRadar()
-
--- ═══════════════════════════════════════════════════════════════════════════════════
--- OFFSCREEN ARROWS (Blissful#4992) - ADAPTADO A OBSIDIAN LIBRARY (VISUALS TAB)
--- ═══════════════════════════════════════════════════════════════════════════════════
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-
-getgenv().OffscreenArrows = {
-    Enabled = false,
-    Distance = 80,
-    Size = 16,
-    Filled = true,
-    Transparency = 0,
-    Thickness = 1,
-    Color = Color3.fromRGB(255, 255, 255),
-    TeamCheck = false
-}
-
-local Arrows = {}
-
-local function CreateArrow()
-    local arrow = Drawing.new("Triangle")
-    arrow.Filled = getgenv().OffscreenArrows.Filled
-    arrow.Thickness = getgenv().OffscreenArrows.Thickness
-    arrow.Transparency = 1 - getgenv().OffscreenArrows.Transparency
-    arrow.Color = getgenv().OffscreenArrows.Color
-    arrow.Visible = false
-    return arrow
-end
-
-local function GetRelative(pos)
-    local char = LocalPlayer.Character
-    if not char or not char.PrimaryPart then return Vector2.new(0, 0) end
-    local root = char.PrimaryPart.Position
-    local camPos = Camera.CFrame.Position
-    local relative = CFrame.new(Vector3.new(root.X, camPos.Y, root.Z), camPos):PointToObjectSpace(pos)
-    return Vector2.new(relative.X, relative.Z)
-end
-
-local function RelativeToCenter(v)
-    return Camera.ViewportSize / 2 - v
-end
-
-local function RotateVector(v, angle)
-    local rad = math.rad(angle)
-    local cos = math.cos(rad)
-    local sin = math.sin(rad)
-    return Vector2.new(v.X * cos - v.Y * sin, v.X * sin + v.Y * cos)
-end
-
-local function UpdateArrows()
-    if not getgenv().OffscreenArrows.Enabled then
-        for _, arrow in pairs(Arrows) do
-            arrow.Visible = false
-        end
-        return
-    end
-
-    for plr, arrow in pairs(Arrows) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.PrimaryPart and plr.Character.Humanoid.Health > 0 then
-            local rootPos = plr.Character.PrimaryPart.Position
-            local _, onScreen = Camera:WorldToViewportPoint(rootPos)
-
-            if not onScreen then
-                local rel = GetRelative(rootPos)
-                local direction = rel.Unit
-                local dist = getgenv().OffscreenArrows.Distance
-                local size = getgenv().OffscreenArrows.Size / 2
-
-                local base = direction * dist
-                local left = base + RotateVector(direction, 90) * size
-                local right = base + RotateVector(direction, -90) * size
-                local tip = direction * (dist + getgenv().OffscreenArrows.Size)
-
-                arrow.PointA = RelativeToCenter(left)
-                arrow.PointB = RelativeToCenter(right)
-                arrow.PointC = RelativeToCenter(tip)
-                arrow.Visible = true
-
-                -- Color por equipo
-                if getgenv().OffscreenArrows.TeamCheck and plr.Team == LocalPlayer.Team then
-                    arrow.Color = Color3.fromRGB(0, 255, 0) -- Verde = aliado
-                else
-                    arrow.Color = Color3.fromRGB(255, 0, 0) -- Rojo = enemigo
-                end
-            else
-                arrow.Visible = false
-            end
-        else
-            arrow.Visible = false
-        end
-    end
-end
-
--- Crear flechas para jugadores
-for _, plr in pairs(Players:GetPlayers()) do
-    if plr ~= LocalPlayer then
-        Arrows[plr] = CreateArrow()
-    end
-end
-
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then
-        Arrows[plr] = CreateArrow()
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(plr)
-    if Arrows[plr] then
-        Arrows[plr]:Remove()
-        Arrows[plr] = nil
-    end
-end)
-
--- Loop principal
-RunService.RenderStepped:Connect(UpdateArrows)
-
--- ═══════════════════════════════════════════════════════════════════════════════════
--- UI - OBSIDIAN (VISUALS TAB)
--- ═══════════════════════════════════════════════════════════════════════════════════
-
-local ArrowsBox = Tabs.Visuals:AddRightGroupbox("Offscreen Arrows", "arrow-up")
-
-ArrowsBox:AddToggle("ArrowsEnabled", {
-    Text = "Offscreen Arrows",
-    Default = false,
-    Tooltip = "Flechas fuera de pantalla",
-    Callback = function(state)
-        getgenv().OffscreenArrows.Enabled = state
-        Library:Notify(state and "Offscreen Arrows Activado" or "Offscreen Arrows Desactivado", 3)
-    end
-})
-
-ArrowsBox:AddSlider("ArrowsDistance", {
-    Text = "Distance center",
-    Min = 9,
-    Max = 200,
-    Default = 9,
-    Rounding = 1,
-    Callback = function(value)
-        getgenv().OffscreenArrows.Distance = value
-    end
-})
-
-ArrowsBox:AddSlider("ArrowsSize", {
-    Text = "Size Arrow",
-    Min = 0,
-    Max = 60,
-    Default = 0,
-    Rounding = 1,
-    Callback = function(value)
-        getgenv().OffscreenArrows.Size = value
-    end
-})
-
-ArrowsBox:AddToggle("ArrowsTeamCheck", {
-    Text = "Team Check",
-    Default = false,
-    Tooltip = "Verde = aliado, Rojo = enemigo",
-    Callback = function(state)
-        getgenv().OffscreenArrows.TeamCheck = state
     end
 })
 
