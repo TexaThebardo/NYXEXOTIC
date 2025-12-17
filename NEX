@@ -2579,11 +2579,17 @@ Tabs.Settings:AddLeftGroupbox("Menu"):AddToggle("CustomCursor", {
     Default = true,
     Callback = function(v) Library.ShowCustomCursor = v end
 })
+Tabs.Settings:AddLeftGroupbox("Menu"):AddLabel("Menu Bind: M (Fixed)")
 Tabs.Settings:AddLeftGroupbox("Menu"):AddButton("Unload", function() Library:Unload() end)
 
+-- Tecla 
 game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
     if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
 end)
+
+Library:Notify("Nyx Exotic, [Open Menu] (M)", 6)
+SaveManager:LoadAutoloadConfig()
+
 
 Library:Notify("Nyx Exotic, [Open Menu] (M)", 6)
 SaveManager:LoadAutoloadConfig()
