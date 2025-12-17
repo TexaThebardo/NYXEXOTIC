@@ -659,369 +659,426 @@ ESPV2Box:AddSlider("ESPToolsSize", {
 
 local ESPV1Box = Tabs.Visuals:AddLeftGroupbox("ESP V1", "bookmark")
 
-local ESP_Enabled = false
-local CurrentTextSize = 18
-local CurrentNameColor = Color3.fromRGB(255, 255, 255)
-local FriendColor = Color3.fromRGB(0, 255, 0)
-local FriendsList = {}
-local ESP_Holders = {}
+-- ESP NAME - FIXED 100% (SAME PERFECT SYSTEM AS ESP BOX)
+-- Now shows ALL players instantly + Friends green + Real-time
+-- Replace your ESP Name code with this
 
-local function CreateESP(plr)
-    if plr == game.Players.LocalPlayer then return end
-    if ESP_Holders[plr] then ESP_Holders[plr]:Destroy() end
+local ESP_Name_Enabled = false
+local ESP_Settings = { 
+    NameColor = Color3.fromRGB(255,255,255), 
+    FriendColor = Color3.fromRGB(0,255,0), 
+    NameSize = 14 
+}
+local FriendsList = {}  -- Shared with ESP Box
+local ESPNameTexts = {}  -- [player] = Drawing Text
 
-    local function MakeESP()
-        if not ESP_Enabled then return end
-        local char = plr.Character
-        if not char or not char:FindFirstChild("Head") then return end
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
-        local billboard = Instance.new("BillboardGui")
-        local text = Instance.new("TextLabel")
+-- Check if player is friend
+local function IsFriend(plr)
+    return table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
+end
 
-        billboard.Name = "NameESP"
-        billboard.Adornee = char.Head
-        billboard.Size = UDim2.new(0, 200, 0, 50)
-        billboard.StudsOffset = Vector3.new(0, 3, 0)
-        billboard.AlwaysOnTop = true
-        billboard.Parent = char
+-- Create Name Text (SAME as Box - Drawing.new("Text"))
+local function CreateNameText(plr)
+    if plr == LocalPlayer then return end
+    if ESPNameTexts[plr] then ESPNameTexts[plr]:Remove() end
 
-        text.Size = UDim2.new(1, 0, 1, 0)
-        text.BackgroundTransparency = 1
-        text.Text = plr.DisplayName
-        text.TextSize = CurrentTextSize
-        text.Font = Enum.Font.GothamBold
-        text.TextStrokeTransparency = 0
-        text.TextStrokeColor3 = Color3.new(0,0,0)
-        text.TextColor3 = (table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)) and FriendColor or CurrentNameColor
-        text.Parent = billboard
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = ESP_Settings.NameColor
+    text.Size = ESP_Settings.NameSize
+    text.Center = true
+    text.Outline = true
+    text.OutlineColor = Color3.new(0, 0, 0)
+    text.Font = 2  -- Gotham
+    text.Transparency = 1
 
-        ESP_Holders[plr] = billboard
+    ESPNameTexts[plr] = text
+end
+
+-- MAIN REAL-TIME LOOP (SAME PERFECT SYSTEM AS ESP BOX)
+RunService.RenderStepped:Connect(function()
+    if not ESP_Name_Enabled then
+        for _, text in pairs(ESPNameTexts) do text.Visible = false end
+        return
     end
 
-    -- Crear ahora si ya tiene personaje
-    if plr.Character then MakeESP() end
-
-    -- ¡¡ESTO ES LO QUE HACÍA FALTA!! → Reconectar cada vez que reaparece
-    plr.CharacterAdded:Connect(function()
-        task.wait(0.5)  -- Esperar a que cargue bien el personaje
-        if ESP_Enabled then
-            MakeESP()
+    for plr, text in pairs(ESPNameTexts) do
+        local char = plr.Character
+        if not char or not char:FindFirstChild("Head") then
+            text.Visible = false
+            continue
         end
+
+        local head = char.Head
+        local headPos = head.Position + Vector3.new(0, 4.5, 0)  -- Above head
+        local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
+
+        if onScreen and screenPos.Z > 0 then
+            text.Text = plr.DisplayName
+            text.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
+            text.Color = IsFriend(plr) and ESP_Settings.FriendColor or ESP_Settings.NameColor
+            text.Size = ESP_Settings.NameSize
+            text.Visible = true
+        else
+            text.Visible = false
+        end
+    end
+end)
+
+-- Auto setup (SAME as ESP Box)
+local function SetupPlayer(plr)
+    if plr == LocalPlayer then return end
+    CreateNameText(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.6)
+        CreateNameText(plr)
     end)
 end
 
-local function UpdateESP()
-    for plr, holder in pairs(ESP_Holders) do
-        if holder and holder.Parent then
-            local label = holder:FindFirstChild("TextLabel")
-            if label then
-                label.TextSize = CurrentTextSize
-                local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
-                label.TextColor3 = isFriend and FriendColor or CurrentNameColor
-            end
+for _, plr in Players:GetPlayers() do SetupPlayer(plr) end
+Players.PlayerAdded:Connect(SetupPlayer)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if ESPNameTexts[plr] then
+        ESPNameTexts[plr]:Remove()
+        ESPNameTexts[plr] = nil
+    end
+end)
+
+-- ==================== UI IN ESPV1Box (SAME SYSTEM) ====================
+ESPV1Box:AddToggle("ESPName", {
+    Text = "ESP Name",
+    Default = false,
+    Tooltip = "Real-time names + green for friends (FIXED - Shows ALL players)",
+    Callback = function(state)
+        ESP_Name_Enabled = state
+        Library:Notify(state and "ESP Name → ON (ALL Players + Friends Green)" or "ESP Name → OFF", 4)
+    end
+}):AddColorPicker("NameColor", {
+    Default = Color3.fromRGB(255,255,255),
+    Title = "Normal Color",
+    Callback = function(color) ESP_Settings.NameColor = color end
+}):AddColorPicker("FriendNameColor", {
+    Default = Color3.fromRGB(0,255,0),
+    Title = "Friends Color",
+    Callback = function(color) ESP_Settings.FriendColor = color end
+})
+
+ESPV1Box:AddSlider("NameSizeSlider", {
+    Text = "Name Size",
+    Min = 10,
+    Max = 40,
+    Default = 14,
+    Rounding = 1,
+    Callback = function(value)
+        ESP_Settings.NameSize = value
+    end
+})
+
+-- Dropdown + Input + SINGLE Confirm (SAME as ESP Box)
+local playerDropdownName = ESPV1Box:AddDropdown("SelectPlayerName", {
+    Text = "Select Player",
+    Values = {},
+    Default = 1,
+    Callback = function(value) end
+})
+
+local function UpdateDropdownName()
+    local values = {}
+    for _, plr in Players:GetPlayers() do
+        if plr ~= LocalPlayer then
+            table.insert(values, plr.DisplayName .. " (" .. plr.Name .. ")")
         end
     end
+    playerDropdownName:SetValues(values)
+    if #values > 0 then playerDropdownName:SetValue(values[1]) end
 end
 
-ESPV1Box:AddToggle("ESPNames", {
-    Text = "ESP Names",
-    Default = false,
-    Callback = function(state)
-        ESP_Enabled = state
+UpdateDropdownName()
+Players.PlayerAdded:Connect(UpdateDropdownName)
+Players.PlayerRemoving:Connect(UpdateDropdownName)
 
-        if state then
-            -- Todos los jugadores actuales + futuros
-            for _, plr in ipairs(game.Players:GetPlayers()) do
-                if plr ~= game.Players.LocalPlayer then
-                    CreateESP(plr)
-                end
-            end
-
-            -- Nuevos jugadores
-            game.Players.PlayerAdded:Connect(function(plr)
-                CreateESP(plr)
-            end)
-
-            Library:Notify("ESP Names Activado", 3)
-        else
-            -- Apagar todo
-            for _, holder in pairs(ESP_Holders) do
-                if holder then holder:Destroy() end
-            end
-            ESP_Holders = {}
-            Library:Notify("ESP Names Desactivado", 3)
-        end
-    end
-})
-:AddColorPicker("NormalColor", {
-    Default = Color3.fromRGB(255, 255, 255),
-    Title = "Normal Name Color",
-    Transparency = 0,
-    Callback = function(v) CurrentNameColor = v UpdateESP() end
-})
-:AddColorPicker("FriendColor", {
-    Default = Color3.fromRGB(0, 255, 0),
-    Title = "Friend Name Color",
-    Transparency = 0,
-    Callback = function(v) FriendColor = v UpdateESP() end
-})
-
-ESPV1Box:AddSlider("NameSize", {
-    Text = "Name Size",
-    Min = 0,
-    Max = 100,
-    Default = 0,
-    Rounding = 1,
-    Callback = function(v) CurrentTextSize = v UpdateESP() end
-})
-
--- ==================== AMIGOS ====================
-local FriendInput = ESPV1Box:AddInput("FriendName", {
-    Default = "Ej: xSh4dow",
-    Text = "Friend's Name",
-    Placeholder = "Ej: xSh4dow",
+local FriendInputName = ESPV1Box:AddInput("FriendNameName", {
+    Text = "Name / Nick",
+    Placeholder = "Type or select and confirm",
     Callback = function() end
 })
 
-ESPV1Box:AddButton("Add Friend", function()
-    local name = FriendInput.Value
-    if name ~= "" and name ~= "Ej: xSh4dow" and not table.find(FriendsList, name) then
-        table.insert(FriendsList, name)
-        Library:Notify("Amigo añadido: "..name, 3)
-        UpdateESP()
-        FriendInput:SetValue("")
+ESPV1Box:AddButton("Confirm Friend (Green Names)", function()
+    local name = FriendInputName.Value
+    if name == "" and playerDropdownName.Value ~= "" then
+        name = playerDropdownName.Value:match("%((.-)%)") or playerDropdownName.Value
+    end
+
+    if name ~= "" then
+        if not table.find(FriendsList, name) then
+            table.insert(FriendsList, name)
+            Library:Notify("Friend confirmed: " .. name .. " (green names instant)", 3)
+            FriendInputName:SetValue("")
+        else
+            Library:Notify("Already a friend", 3)
+        end
+    else
+        Library:Notify("Enter a name or select from dropdown", 3)
     end
 end)
 
-ESPV1Box:AddButton("Clear Friends", function()
+ESPV1Box:AddButton("Clear Friends (Reset Names)", function()
     FriendsList = {}
-    Library:Notify("Lista limpiada", 3)
-    UpdateESP()
+    Library:Notify("Friends list cleared - Names reset to normal", 3)
 end)
 
--- ==================== ESP BOX ULTRA OPTIMIZADO (SOLO LO ESENCIAL) ====================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+-- === TRACER ESP PRO - IMPROVED & FIXED ===
+local Tracer = {
+    Enabled = false,
+    Color = Color3.fromRGB(255, 255, 255),
+    Thickness = 2,
+    From = "Bottom",          -- "Bottom", "Middle", "Top"
+    Part = "Head",            -- Target body part
+    TeamCheck = false,        -- If true → hides tracers on teammates
+    AliveCheck = true,        -- Always active (hides if dead)
+    MaxDistance = 0,          -- 0 = unlimited
+    CircleEnabled = true,
+    CircleRadius = 8,
+    CircleThickness = 2,
+    CircleFilled = false
+}
+
+local TracerLines = {}   -- [player] = { line = Drawing.Line, circle = Drawing.Circle }
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local BoxESP_Enabled = false
-local BoxColor = Color3.fromRGB(255, 255, 255)
-local BoxThickness = 2
-local ESPBoxes = {}  -- [player] = Drawing Square
-
--- Crear caja una sola vez por jugador
-local function CreateBox(plr)
-    if plr == LocalPlayer or ESPBoxes[plr] then return end
-
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = BoxColor
-    box.Thickness = BoxThickness
-    box.Transparency = 1
-    box.Filled = false
-
-    ESPBoxes[plr] = box
-end
-
--- Limpiar al salir del servidor
-Players.PlayerRemoving:Connect(function(plr)
-    if ESPBoxes[plr] then
-        ESPBoxes[plr]:Remove()
-        ESPBoxes[plr] = nil
-    end
-end)
-
--- Crear cajas para jugadores actuales y futuros
-for _, plr in Players:GetPlayers() do
-    if plr ~= LocalPlayer then CreateBox(plr) end
-end
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then CreateBox(plr) end
-end)
-
--- LOOP PRINCIPAL OPTIMIZADO (0 lag)
-RunService.RenderStepped:Connect(function()
-    if not BoxESP_Enabled then
-        for _, box in ESPBoxes do box.Visible = false end
-        return
-    end
-
-    for plr, box in ESPBoxes do
-        local char = plr.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Head") then
-            box.Visible = false
-            continue
-        end
-
-        local headPos = char.Head.Position + Vector3.new(0, 2.5, 0)
-        local rootPos = char.HumanoidRootPart.Position - Vector3.new(0, 3.5, 0)
-
-        local top, onScreenTop = Camera:WorldToViewportPoint(headPos)
-        local bottom, onScreenBottom = Camera:WorldToViewportPoint(rootPos)
-
-        if not onScreenTop or not onScreenBottom or top.Z < 0 or bottom.Z < 0 then
-            box.Visible = false
-            continue
-        end
-
-        local height = math.abs(top.Y - bottom.Y)
-        local width = height * 0.45
-
-        box.Size = Vector2.new(width, height)
-        box.Position = Vector2.new(top.X - width/2, top.Y)
-        box.Color = BoxColor
-        box.Thickness = BoxThickness
-        box.Visible = true
-    end
-end)
-
--- ==================== UI - SOLO TOGGLE + COLOR + THICKNESS ====================
-ESPV1Box:AddToggle("BoxOnly", {
-    Text = "ESP Box",
-    Default = false,
-    Callback = function(state)
-        BoxESP_Enabled = state
-        Library:Notify(state and "ESP Box Activado" or "ESP Box Desactivado", 3)
-    end
-})
-:AddColorPicker("BoxColorPicker", {
-    Default = Color3.fromRGB(255, 255, 255),
-    Title = "Box Color",
-    Transparency = 0,
-    Callback = function(col)
-        BoxColor = col
-    end
-})
-
-ESPV1Box:AddSlider("BoxThickness", {
-    Text = "Box Thickness",
-    Min = 0,
-    Max = 5,
-    Default = 0,
-    Rounding = 1,
-    Callback = function(v)
-        BoxThickness = v
-    end
-})
-
-local Tracer_Enabled = false
-local Tracer_Color = Color3.fromRGB(255, 255, 255)
-local Tracer_Thickness = 2
-local Tracer_From = "Bottom"  -- "Bottom", "Middle", "Top"
-
-local TracerLines = {}  -- [player] = line
-
--- Crear tracer para un jugador
+-- Create line + circle for a player
 local function CreateTracer(plr)
-    if plr == game.Players.LocalPlayer or TracerLines[plr] then return end
+    if plr == LocalPlayer or TracerLines[plr] then return end
 
     local line = Drawing.new("Line")
     line.Visible = false
-    line.Color = Tracer_Color
-    line.Thickness = Tracer_Thickness
+    line.Color = Tracer.Color
+    line.Thickness = Tracer.Thickness
     line.Transparency = 1
 
-    TracerLines[plr] = line
+    local circle = Drawing.new("Circle")
+    circle.Visible = false
+    circle.Color = Tracer.Color
+    circle.Thickness = Tracer.CircleThickness
+    circle.Radius = Tracer.CircleRadius
+    circle.Filled = Tracer.CircleFilled
+    circle.NumSides = 20
+    circle.Transparency = 1
+
+    TracerLines[plr] = { line = line, circle = circle }
 end
 
--- Loop principal
-game:GetService("RunService").RenderStepped:Connect(function()
-    if not Tracer_Enabled then
-        for _, line in pairs(TracerLines) do
-            line.Visible = false
-        end
-        return
-    end
-
-    local screenCenterX = workspace.CurrentCamera.ViewportSize.X / 2
-    local screenY = workspace.CurrentCamera.ViewportSize.Y
-
-    local fromY
-    if Tracer_From == "Bottom" then
-        fromY = screenY
-    elseif Tracer_From == "Middle" then
-        fromY = screenY / 2
-    else -- Top
-        fromY = 0
-    end
-
-    for plr, line in pairs(TracerLines) do
-        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") or not plr.Character:FindFirstChild("Head") then
-            line.Visible = false
-            continue
-        end
-
-        local root = plr.Character.HumanoidRootPart.Position
-        local head = plr.Character.Head.Position + Vector3.new(0, 1, 0)
-        local targetPos = head  -- Puedes cambiar a root.Position si quieres desde los pies
-
-        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPos)
-
-        if onScreen and screenPos.Z > 0 then
-            line.From = Vector2.new(screenCenterX, fromY)
-            line.To = Vector2.new(screenPos.X, screenPos.Y)
-            line.Color = Tracer_Color
-            line.Thickness = Tracer_Thickness
-            line.Visible = true
-        else
-            line.Visible = false
-        end
-    end
-end)
-
--- Limpiar al salir
-game.Players.PlayerRemoving:Connect(function(plr)
+-- Clean up when player leaves
+Players.PlayerRemoving:Connect(function(plr)
     if TracerLines[plr] then
-        TracerLines[plr]:Remove()
+        TracerLines[plr].line:Remove()
+        TracerLines[plr].circle:Remove()
         TracerLines[plr] = nil
     end
 end)
 
--- Crear para jugadores existentes
-for _, plr in game.Players:GetPlayers() do
-    if plr ~= game.Players.LocalPlayer then CreateTracer(plr) end
+-- Create for existing and new players
+for _, plr in Players:GetPlayers() do
+    if plr ~= LocalPlayer then CreateTracer(plr) end
 end
-
-game.Players.PlayerAdded:Connect(function(plr)
-    if plr ~= game.Players.LocalPlayer then CreateTracer(plr) end
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then CreateTracer(plr) end
 end)
 
--- TOGGLE + COLOR + GROSOR + POSICIÓN
+-- Main loop (RenderStepped for smoothness)
+RunService.RenderStepped:Connect(function()
+    if not Tracer.Enabled then
+        for _, data in pairs(TracerLines) do
+            data.line.Visible = false
+            data.circle.Visible = false
+        end
+        return
+    end
+
+    local viewportSize = Camera.ViewportSize
+    local screenCenterX = viewportSize.X / 2
+    local fromY = Tracer.From == "Bottom" and viewportSize.Y
+               or Tracer.From == "Middle" and viewportSize.Y / 2
+               or 0
+
+    for plr, data in pairs(TracerLines) do
+        local char = plr.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then
+            data.line.Visible = false
+            data.circle.Visible = false
+            continue
+        end
+
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if Tracer.AliveCheck and (not humanoid or humanoid.Health <= 0) then
+            data.line.Visible = false
+            data.circle.Visible = false
+            continue
+        end
+
+        -- Team Check: hide tracers on teammates
+        if Tracer.TeamCheck and plr.Team == LocalPlayer.Team then
+            data.line.Visible = false
+            data.circle.Visible = false
+            continue
+        end
+
+        -- Get target part
+        local targetPart = char:FindFirstChild(Tracer.Part)
+        if not targetPart then
+            targetPart = char:FindFirstChild("Head") -- Fallback to Head
+            if not targetPart then
+                data.line.Visible = false
+                data.circle.Visible = false
+                continue
+            end
+        end
+
+        -- Max distance check
+        if Tracer.MaxDistance > 0 then
+            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                local dist = (myRoot.Position - targetPart.Position).Magnitude
+                if dist > Tracer.MaxDistance then
+                    data.line.Visible = false
+                    data.circle.Visible = false
+                    continue
+                end
+            end
+        end
+
+        -- Exact position of the part center
+        local targetPos = targetPart.Position
+        local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+
+        if onScreen and screenPos.Z > 0 then
+            -- Line
+            data.line.From = Vector2.new(screenCenterX, fromY)
+            data.line.To = Vector2.new(screenPos.X, screenPos.Y)
+            data.line.Color = Tracer.Color
+            data.line.Thickness = Tracer.Thickness
+            data.line.Visible = true
+
+            -- Circle at target
+            if Tracer.CircleEnabled then
+                data.circle.Position = Vector2.new(screenPos.X, screenPos.Y)
+                data.circle.Radius = Tracer.CircleRadius
+                data.circle.Thickness = Tracer.CircleThickness
+                data.circle.Color = Tracer.Color
+                data.circle.Visible = true
+            else
+                data.circle.Visible = false
+            end
+        else
+            data.line.Visible = false
+            data.circle.Visible = false
+        end
+    end
+end)
+
+-- === UI (Add this in your ESPV1Box) ===
 ESPV1Box:AddToggle("TracerESP", {
     Text = "ESP Tracer",
     Default = false,
+    Tooltip = "Precise tracers + circle on target",
     Callback = function(state)
-        Tracer_Enabled = state
-        Library:Notify(state and "ESP Tracer Activado" or "ESP Tracer Desactivado", 3)
+        Tracer.Enabled = state
+        Library:Notify(state and "Tracer Pro → ON" or "Tracer Pro → OFF", 3)
     end
-})
-:AddColorPicker("TracerColor", {
+}):AddColorPicker("TracerColor", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "Tracer Color",
-    Transparency = 0,
     Callback = function(col)
-        Tracer_Color = col
-    end,
+        Tracer.Color = col
+    end
 })
 
-ESPV1Box:AddSlider("TracerThickness", {
-    Text = "Tracer Thickness",
-    Min = 0,
-    Max = 6,
-    Default = 0,
-    Rounding = 1,
-    Callback = function(v)
-        Tracer_Thickness = v
+ESPV1Box:AddDropdown("TracerPart", {
+    Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+    Default = 1,
+    Text = "Target Part",
+    Callback = function(value)
+        Tracer.Part = value
+        Library:Notify("Target Part: " .. value, 2)
     end
 })
 
 ESPV1Box:AddDropdown("TracerFrom", {
     Values = {"Bottom", "Middle", "Top"},
-    Default = "Bottom",
-    Text = "Tracer From",
+    Default = 1,
+    Text = "Tracer Origin",
     Callback = function(value)
-        Tracer_From = value
+        Tracer.From = value
+    end
+})
+
+ESPV1Box:AddSlider("TracerThickness", {
+    Text = "Line Thickness",
+    Min = 0,
+    Max = 8,
+    Default = 0,
+    Rounding = 1,
+    Callback = function(v)
+        Tracer.Thickness = v
+    end
+})
+
+ESPV1Box:AddToggle("TracerCircle", {
+    Text = "Circle on Target",
+    Default = true,
+    Callback = function(state)
+        Tracer.CircleEnabled = state
+    end
+})
+
+ESPV1Box:AddSlider("TracerCircleSize", {
+    Text = "Circle Size",
+    Min = 0,
+    Max = 25,
+    Default = 0,
+    Rounding = 1,
+    Callback = function(v)
+        Tracer.CircleRadius = v
+    end
+})
+
+ESPV1Box:AddSlider("TracerCircleThick", {
+    Text = "Circle Thickness",
+    Min = 0,
+    Max = 6,
+    Default = 0,
+    Rounding = 1,
+    Callback = function(v)
+        Tracer.CircleThickness = v
+    end
+})
+
+ESPV1Box:AddToggle("TracerTeamCheck", {
+    Text = "Team Check",
+    Default = false,
+    Tooltip = "Does not show tracers on your team members",
+    Callback = function(state)
+        Tracer.TeamCheck = state
+    end
+})
+
+ESPV1Box:AddSlider("TracerMaxDist", {
+    Text = "Distance",
+    Min = 0,
+    Max = 1000,
+    Default = 0,
+    Rounding = 1,
+    Callback = function(v)
+        Tracer.MaxDistance = v
     end
 })
 
@@ -1325,190 +1382,210 @@ ArrowsBox:AddToggle("ArrowsTeamCheck", {
     end
 })
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+-- === HEALTH BAR ESP PRO - DEGRADADO ULTRA SUAVE Y BONITO ===
+local HealthBar = {
+    Enabled = false,
+    BarWidth = 4,             -- Ancho fijo
+    BarHeight = 50,           -- Altura fija
+    TeamCheck = false,
+    MaxDistance = 0
+}
+
+local Drawings = {}  -- [player] = { bg, segments = {}, text }
+local CurrentHeight = {}
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local HealthBarEnabled = false          -- El toggle lo cambia
-local OffsetX = 40                      -- El slider lo cambia
-local Drawings = {}                     -- Guarda los dibujos de cada jugador
-local TargetHeight = {}                 -- Altura objetivo del fill
-local CurrentHeight = {}                -- Altura actual (para animación suave)
+-- Crear dibujos
+local function CreateHealthBar(plr)
+    if plr == LocalPlayer or Drawings[plr] then return end
 
--- Función que crea los dibujos para un jugador
-local function CreateHealthBar(player)
-    if player == LocalPlayer then return end
-    if Drawings[player] then return end
+    local bg = Drawing.new("Square")
+    bg.Filled = true
+    bg.Color = Color3.new(0, 0, 0)
+    bg.Transparency = 0.5
+    bg.Visible = false
 
-    -- Fondo negro
-    local background = Drawing.new("Square")
-    background.Visible = false
-    background.Filled = true
-    background.Color = Color3.new(0, 0, 0)
-    background.Transparency = 0.6
-    background.Thickness = 1
+    local segments = {}
+    for i = 1, 20 do  -- 20 segmentos = degradado ULTRA suave
+        local seg = Drawing.new("Square")
+        seg.Filled = true
+        seg.Visible = false
+        table.insert(segments, seg)
+    end
 
-    -- Relleno de vida (verde/amarillo/rojo)
-    local healthFill = Drawing.new("Square")
-    healthFill.Visible = false
-    healthFill.Filled = true
-    healthFill.Color = Color3.fromRGB(0, 255, 0)
-    healthFill.Transparency = 1
+    local text = Drawing.new("Text")
+    text.Size = 13
+    text.Center = true
+    text.Outline = true
+    text.Color = Color3.new(1, 1, 1)
+    text.Font = 2
+    text.Visible = false
 
-    -- Texto del porcentaje
-    local healthText = Drawing.new("Text")
-    healthText.Visible = false
-    healthText.Size = 14
-    healthText.Center = true
-    healthText.Outline = true
-    healthText.Color = Color3.new(1, 1, 1)
-    healthText.Font = 2
-
-    -- Guardamos todo
-    Drawings[player] = {
-        bg = background,
-        fill = healthFill,
-        text = healthText
-    }
-
-    TargetHeight[player] = 0
-    CurrentHeight[player] = 0
+    Drawings[plr] = { bg = bg, segments = segments, text = text }
+    CurrentHeight[plr] = 0
 end
 
--- Crear barras para jugadores que ya están en el server
-for _, player in ipairs(Players:GetPlayers()) do
-    CreateHealthBar(player)
-end
-
--- Cuando entra un nuevo jugador
-Players.PlayerAdded:Connect(function(player)
-    CreateHealthBar(player)
-end)
-
--- Cuando sale un jugador, limpiamos sus dibujos
-Players.PlayerRemoving:Connect(function(player)
-    if Drawings[player] then
-        Drawings[player].bg:Remove()
-        Drawings[player].fill:Remove()
-        Drawings[player].text:Remove()
-        Drawings[player] = nil
-        TargetHeight[player] = nil
-        CurrentHeight[player] = nil
+-- Limpieza
+Players.PlayerRemoving:Connect(function(plr)
+    if Drawings[plr] then
+        Drawings[plr].bg:Remove()
+        for _, seg in pairs(Drawings[plr].segments) do
+            seg:Remove()
+        end
+        Drawings[plr].text:Remove()
+        Drawings[plr] = nil
+        CurrentHeight[plr] = nil
     end
 end)
 
--- Bucle principal (se ejecuta cada frame)
+-- Crear para todos
+for _, plr in Players:GetPlayers() do
+    if plr ~= LocalPlayer then CreateHealthBar(plr) end
+end
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then CreateHealthBar(plr) end
+end)
+
+-- Bucle principal
 RunService.RenderStepped:Connect(function()
-    if not HealthBarEnabled then
-        -- Ocultar todo si está desactivado
-        for _, data in pairs(Drawings) do
-            data.bg.Visible = false
-            data.fill.Visible = false
-            data.text.Visible = false
+    if not HealthBar.Enabled then
+        for _, objs in pairs(Drawings) do
+            objs.bg.Visible = false
+            for _, seg in pairs(objs.segments) do seg.Visible = false end
+            objs.text.Visible = false
         end
         return
     end
 
-    for player, objects in pairs(Drawings) do
-        local character = player.Character
-        if not character or not character:FindFirstChild("HumanoidRootPart") then
-            objects.bg.Visible = false
-            objects.fill.Visible = false
-            objects.text.Visible = false
-            CurrentHeight[player] = 0
+    for plr, objs in pairs(Drawings) do
+        local char = plr.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then
+            objs.bg.Visible = false
+            for _, seg in pairs(objs.segments) do seg.Visible = false end
+            objs.text.Visible = false
             continue
         end
 
-        local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-
-        if not torso or not humanoid or humanoid.Health <= 0 then
-            objects.bg.Visible = false
-            objects.fill.Visible = false
-            objects.text.Visible = false
-            CurrentHeight[player] = 0
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then
+            objs.bg.Visible = false
+            for _, seg in pairs(objs.segments) do seg.Visible = false end
+            objs.text.Visible = false
             continue
         end
 
-        local screenPos, onScreen = Camera:WorldToViewportPoint(torso.Position)
+        if HealthBar.TeamCheck and plr.Team == LocalPlayer.Team then
+            objs.bg.Visible = false
+            for _, seg in pairs(objs.segments) do seg.Visible = false end
+            objs.text.Visible = false
+            continue
+        end
+
+        local rootPos = char.HumanoidRootPart.Position
+        local screenPos, onScreen = Camera:WorldToViewportPoint(rootPos)
+
         if not onScreen or screenPos.Z < 0 then
-            objects.bg.Visible = false
-            objects.fill.Visible = false
-            objects.text.Visible = false
-            CurrentHeight[player] = 0
+            objs.bg.Visible = false
+            for _, seg in pairs(objs.segments) do seg.Visible = false end
+            objs.text.Visible = false
             continue
         end
 
-        -- Cálculo de tamaño según distancia
-        local distance = (Camera.CFrame.Position - torso.Position).Magnitude
-        local scaleFactor = math.clamp(150 / distance, 0.5, 2)
-        local barHeight = math.clamp(35 * scaleFactor, 35, 80)
+        -- Offset dinámico para pegar al jugador
+        local headPos = char:FindFirstChild("Head") and char.Head.Position or rootPos
+        local headScreen, _ = Camera:WorldToViewportPoint(headPos + Vector3.new(2, 0, 0))
+        local approximateWidth = math.abs(headScreen.X - screenPos.X) * 1.8
+        local dynamicOffset = approximateWidth + 8
+
+        local x = screenPos.X + dynamicOffset
+        local y = screenPos.Y - HealthBar.BarHeight / 2
 
         local healthPercent = humanoid.Health / humanoid.MaxHealth
-        TargetHeight[player] = (barHeight - 4) * healthPercent
+        local filledHeight = HealthBar.BarHeight * healthPercent
+        CurrentHeight[plr] = (CurrentHeight[plr] or 0) + (filledHeight - (CurrentHeight[plr] or 0)) * 0.3
 
-        local xPosition = screenPos.X + OffsetX
-        local yPosition = screenPos.Y - barHeight / 2
+        -- Fondo
+        objs.bg.Position = Vector2.new(x - 2, y)
+        objs.bg.Size = Vector2.new(HealthBar.BarWidth + 2, HealthBar.BarHeight)
+        objs.bg.Visible = true
 
-        -- Fondo negro
-        objects.bg.Position = Vector2.new(xPosition - 3, yPosition)
-        objects.bg.Size = Vector2.new(6, barHeight)
-        objects.bg.Visible = true
+        -- Degradado ultra suave con 20 segmentos
+        local segmentHeight = HealthBar.BarHeight / #objs.segments
+        for i, seg in ipairs(objs.segments) do
+            local segmentTop = (i - 1) * segmentHeight
+            local segmentBottom = i * segmentHeight
 
-        -- Texto del porcentaje
-        objects.text.Text = math.floor(healthPercent * 100) .. "%"
-        objects.text.Position = Vector2.new(xPosition, yPosition - 18)
-        objects.text.Size = math.clamp(12 + scaleFactor * 4, 12, 18)
-        objects.text.Visible = true
+            -- Porcentaje del segmento (1 = arriba, 0 = abajo)
+            local segmentPercent = 1 - ((i - 0.5) / #objs.segments)
 
-        -- Color del fill según vida
-        if healthPercent > 0.6 then
-            objects.fill.Color = Color3.fromRGB(0, 255, 0)   -- Verde
-        elseif healthPercent > 0.3 then
-            objects.fill.Color = Color3.fromRGB(255, 255, 0) -- Amarillo
-        else
-            objects.fill.Color = Color3.fromRGB(255, 0, 0)   -- Rojo
+            local r, g, b
+
+            if segmentPercent >= 0.7 then
+                -- Verde brillante → Verde lima
+                r = math.floor(100 + (segmentPercent - 0.7) / 0.3 * 155)  -- 100 → 255
+                g = 255
+                b = math.floor((segmentPercent - 0.7) / 0.3 * 100)       -- 0 → 100
+            elseif segmentPercent >= 0.4 then
+                -- Verde lima → Amarillo dorado
+                local t = (segmentPercent - 0.4) / 0.3
+                r = 255
+                g = 255
+                b = math.floor(100 * t)
+            elseif segmentPercent >= 0.2 then
+                -- Amarillo → Naranja cálido
+                local t = (segmentPercent - 0.2) / 0.2
+                r = 255
+                g = math.floor(255 - 140 * t)  -- 255 → 115 (naranja bonito)
+                b = math.floor(80 * t)
+            else
+                -- Naranja → Rojo intenso
+                local t = segmentPercent / 0.2
+                r = 255
+                g = math.floor(115 * t)
+                b = 0
+            end
+
+            seg.Color = Color3.fromRGB(r, g, b)
+
+            -- Mostrar solo si está dentro de la vida actual
+            if segmentBottom <= CurrentHeight[plr] then
+                seg.Position = Vector2.new(x - 1, y + HealthBar.BarHeight - segmentBottom)
+                seg.Size = Vector2.new(HealthBar.BarWidth, segmentHeight)
+                seg.Visible = true
+            else
+                seg.Visible = false
+            end
         end
 
-        -- Animación suave del fill
-        local current = CurrentHeight[player]
-        local newHeight = current + (TargetHeight[player] - current) * 0.25
-        CurrentHeight[player] = newHeight
-
-        objects.fill.Position = Vector2.new(xPosition - 2, yPosition + barHeight - newHeight - 2)
-        objects.fill.Size = Vector2.new(4, newHeight)
-        objects.fill.Visible = true
+        -- Texto porcentaje
+        objs.text.Text = math.floor(healthPercent * 100) .. "%"
+        objs.text.Position = Vector2.new(x, y - 18)
+        objs.text.Visible = true
     end
 end)
 
--- TU UI (Kavo, Linoria, etc.) - ESTO ES LO QUE FALTABA
+-- === UI ===
 ESPV2Box:AddToggle("HealthBarPro", {
-    Text = "Health Bar Pro",
+    Text = "Health Bar",
     Default = false,
+    Tooltip = "Barra pegada con degradado ULTRA suave y bonito",
     Callback = function(value)
-        HealthBarEnabled = value
+        HealthBar.Enabled = value
+        Library:Notify(value and "Health Bar Premium → ON" or "Health Bar → OFF", 3)
     end
 })
 
-ESPV2Box:AddSlider("HealthDistance", {
-    Text = "Distancia de la barra",
-    Min = 20,
-    Max = 100,
-    Default = 40,
-    Rounding = 1,
-    Callback = function(value)
-        OffsetX = value
+ESPV2Box:AddToggle("HealthTeamCheck", {
+    Text = "Team Check",
+    Default = false,
+    Callback = function(state)
+        HealthBar.TeamCheck = state
     end
 })
 
-spawn(function()
-    while task.wait(10) do
-        pcall(function()
-            game:GetService("CoreGui").RobloxGui.Modules.Common.Locales:Destroy()
-        end)
-    end
-end)
 
 getgenv().Aimlock = {
     Enabled = false,
