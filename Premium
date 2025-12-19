@@ -1,12 +1,18 @@
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+-- Repo principal (para Library.lua)
+local repo = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/"
+
+-- Cargar Library
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+-- Cargar addons directamente desde la raíz (NO en /addons/)
+local ThemeManager = loadstring(game:HttpGet(repo .. "ThemeManagerV2.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "SaveManager.lua"))()
+
 
 local Window = Library:CreateWindow({
-    Title = "NYX EXOTIC",
-    Icon = 99959252308019,
-    Footer = "Versión: 2.1 ¡Beta! | Press M to open/close",
+    Title = " И  Ξ Ｘ | PRM",
+    Icon = 87256533253057,
+    Footer = "Versión: 2.5 ¡Beta! | PREMIUM SCRIPT",
     AutoShow = true,
     ShowCustomCursor = false,
     NotifySide = "Right"
@@ -2572,10 +2578,6 @@ Tabs.Settings:AddLeftGroupbox("Menu"):AddButton("Unload", function() Library:Unl
 game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
     if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
 end)
-
-Library:Notify("Nyx Exotic, [Open Menu] (M)", 6)
-SaveManager:LoadAutoloadConfig()
-
 
 Library:Notify("Nyx Exotic, [Open Menu] (M)", 6)
 SaveManager:LoadAutoloadConfig()
