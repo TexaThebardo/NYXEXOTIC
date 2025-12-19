@@ -1,12 +1,17 @@
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+-- Repo principal (para Library.lua)
+local repo = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/"
+
+-- Cargar Library
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+-- Cargar addons directamente desde la raíz (NO en /addons/)
+local ThemeManager = loadstring(game:HttpGet(repo .. "ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "NYX EXOTIC",
-    Icon = 99959252308019,
-    Footer = "Versión: 2.1 ¡Beta! | Press M to open/close",
+    Title = " И  Ξ Ｘ | FREE",
+    Icon = 126669385928299,
+    Footer = "Versión: 2.5 ¡Beta! | Press M to open/close",
     AutoShow = true,
     ShowCustomCursor = false,
     NotifySide = "Right"
