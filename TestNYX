@@ -9,9 +9,9 @@ local ThemeManager = loadstring(game:HttpGet(repo .. "ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = " И  Ξ Ｘ | FREE",
+    Title = " И  Ξ Ｘ | TESTER",
     Icon = 126669385928299,
-    Footer = "Versión: 2.5 ¡Beta! | FREEMIUM SCRIPT",
+    Footer = "Versión: 2.5 ¡Beta! | TESTER SCRIPT",
     AutoShow = true,
     ShowCustomCursor = false,
     NotifySide = "Right"
