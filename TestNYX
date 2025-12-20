@@ -1,0 +1,823 @@
+-- Repo principal (para Library.lua)
+local repo = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/"
+
+-- Cargar Library
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+
+-- Cargar addons directamente desde la raíz (NO en /addons/)
+local ThemeManager = loadstring(game:HttpGet(repo .. "ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "SaveManager.lua"))()
+
+local Window = Library:CreateWindow({
+    Title = " И  Ξ Ｘ | FREE",
+    Icon = 126669385928299,
+    Footer = "Versión: 2.5 ¡Beta! | FREEMIUM SCRIPT",
+    AutoShow = true,
+    ShowCustomCursor = false,
+    NotifySide = "Right"
+})
+
+local Tabs = {
+    Main = Window:AddTab("Home", "layout-dashboard"),
+    Combat = Window:AddTab("Combat", "crosshair"),
+    Visuals = Window:AddTab("Visuals", "eye"),
+    Player = Window:AddTab("Player", "user"),
+    Settings = Window:AddTab("Settings", "settings")
+}
+
+-- ==================== HOME TAB ====================
+local PlayerInfo = Tabs.Main:AddLeftGroupbox("Player Info", "accessibility")
+local UsernameLabel = PlayerInfo:AddLabel("👤 Username: " .. game.Players.LocalPlayer.Name)
+local DisplayLabel = PlayerInfo:AddLabel("📝 Display: @" .. game.Players.LocalPlayer.DisplayName)
+local UserIDLabel = PlayerInfo:AddLabel("🔢 User ID: " .. game.Players.LocalPlayer.UserId)
+local PlaytimeLabel = PlayerInfo:AddLabel("⏰ Playtime: 00:00")
+local RegionLabel = PlayerInfo:AddLabel("🌐 Pais/Región: Unknown")
+
+local ServerInfo = Tabs.Main:AddRightGroupbox("Server Info", "server")
+local GameLabel = ServerInfo:AddLabel("Game: Loading...")
+local CreatorLabel = ServerInfo:AddLabel("Creator: Loading...")
+local PlaceIDLabel = ServerInfo:AddLabel("Place ID: " .. game.PlaceId)
+local JobIDLabel = ServerInfo:AddLabel("Job ID: " .. (game.JobId == "" and "Private" or string.sub(game.JobId, 1, 20).."..."))
+local PlayersLabel = ServerInfo:AddLabel("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
+
+spawn(function()
+    local success, info = pcall(function()
+        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+    end)
+    if success then
+        GameLabel:SetText("Game: " .. info.Name)
+        CreatorLabel:SetText("Creator: " .. (info.Creator.Name or "Roblox"))
+    end
+end)
+
+local function UpdatePlayers()
+    local current = #game.Players:GetPlayers()
+    local max = game.Players.MaxPlayers
+    local color = current >= max * 0.8 and "ff0000" or current >= max * 0.5 and "ffff00" or "00ff00"
+    PlayersLabel:SetText("Players: <font color='#" .. color .. "'>" .. current .. " / " .. max .. "</font>")
+end
+UpdatePlayers()
+game.Players.PlayerAdded:Connect(UpdatePlayers)
+game.Players.PlayerRemoving:Connect(UpdatePlayers)
+
+local SystemInfo = Tabs.Main:AddRightGroupbox("System Info", "monitor")
+local FPSLabel = SystemInfo:AddLabel("zap FPS: --")
+local PingLabel = SystemInfo:AddLabel("wifi Ping: -- ms")
+local RAMLabel = SystemInfo:AddLabel("database RAM: -- MB")
+local PlatformLabel = SystemInfo:AddLabel("laptop Plataforma: Detecting...")
+local ExecutorLabel = SystemInfo:AddLabel("code Executor: Detecting...")
+local StatusLabel = SystemInfo:AddLabel("check Status: Loaded")
+
+spawn(function()
+    local exec = "Unknown"
+    local platform = "PC"
+    if identifyexecutor then exec = identifyexecutor()
+    elseif getexecutorname then exec = getexecutorname()
+    elseif syn then exec = "Synapse X"
+    elseif KRNL_LOADED then exec = "Krnl"
+    elseif Fluxus then exec = "Fluxus"
+    elseif is_solara then exec = "Solara"
+    elseif gethui then exec = "Delta / Codex"
+    end
+
+    local UIS = game:GetService("UserInputService")
+    if UIS.TouchEnabled and not UIS.KeyboardEnabled then
+        platform = "Mobile"
+        if string.find(game:GetService("UserGameSettings"):GetPlatform(), "iOS") then
+            platform = "iOS"
+        else
+            platform = "Android"
+        end
+    elseif UIS.GamepadEnabled then
+        platform = "Console"
+    else
+        platform = "PC"
+    end
+
+    local platformIcon = platform == "PC" and "Laptop"
+                      or platform == "Android" and "SmartPhone"
+                      or platform == "iOS" and "Tablet"
+                      or "Gamepad"
+    PlatformLabel:SetText(platformIcon .. " Plataforma: " .. platform)
+    ExecutorLabel:SetText("Code Executor: " .. exec)
+    StatusLabel:SetText("check Status: 🟢 Loaded")
+end)
+
+local frameCount = 0
+local lastUpdate = tick()
+game:GetService("RunService").Heartbeat:Connect(function()
+    frameCount += 1
+    if tick() - lastUpdate >= 1 then
+        local fps = math.floor(frameCount)
+        local color = fps >= 60 and "00ff00" or fps >= 40 and "ffff00" or "ff0000"
+        FPSLabel:SetText("Zap FPS: <font color='#" .. color .. "'>" .. fps .. "</font>")
+        frameCount = 0
+        lastUpdate = tick()
+    end
+end)
+
+spawn(function()
+    while task.wait(1.5) do
+        local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+        local color = ping <= 60 and "00ff00" or ping <= 120 and "ffff00" or "ff0000"
+        PingLabel:SetText("Wi-Fi Ping: <font color='#" .. color .. "'>" .. ping .. " ms</font>")
+    end
+end)
+
+spawn(function()
+    while task.wait(2) do
+        local ram = math.floor(collectgarbage("count") / 1024)
+        RAMLabel:SetText("DataBase RAM: " .. ram .. " MB")
+    end
+end)
+
+local startTime = tick()
+coroutine.wrap(function()
+    while task.wait(1) do
+        local elapsed = tick() - startTime
+        local minutes = math.floor(elapsed / 60)
+        local seconds = math.floor(elapsed % 60)
+        if minutes >= 60 then
+            PlaytimeLabel:SetText("⏰ Playtime: <font color='#00ff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        elseif minutes >= 30 then
+            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ffff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        elseif minutes >= 10 then
+            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ff8800'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        else
+            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ff0000'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
+        end
+    end
+end)()
+
+spawn(function()
+    local region = "Unknown"
+    pcall(function()
+        region = game:GetService("LocalizationService"):GetCountryRegionForPlayerAsync(game.Players.LocalPlayer)
+    end)
+    RegionLabel:SetText("🌐 País/Región: " .. (region or "Unknown"))
+end)
+
+-- ==================== COMBAT TAB - AIMLOCK ====================
+getgenv().Aimlock = {
+    Enabled = false,
+    Aiming = false,
+    Part = "Head",
+    OldPart = "Head",
+    Radius = 80,
+    TeamCheck = false,
+    Predict = true,
+    Prediction = 15,
+    Smooth = 0.14,
+    AliveCheck = false,
+    Airshot = false
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Target = nil
+
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Radius = 80
+FOVCircle.Color = Color3.fromRGB(255, 0, 70)
+FOVCircle.Thickness = 1.6
+FOVCircle.NumSides = 16
+FOVCircle.Filled = false
+FOVCircle.Transparency = 0.9
+FOVCircle.Visible = false
+
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + 36)
+end)
+
+local function GetClosest()
+    local closest = nil
+    local dist = getgenv().Aimlock.Radius
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+            if getgenv().Aimlock.TeamCheck and plr.Team == LocalPlayer.Team then continue end
+            local part = plr.Character:FindFirstChild(getgenv().Aimlock.Part) or plr.Character:FindFirstChild("Head")
+            if part then
+                local sp, onscreen = Camera:WorldToViewportPoint(part.Position)
+                if onscreen then
+                    local d = (Vector2.new(sp.X, sp.Y) - Vector2.new(Mouse.X, Mouse.Y + 36)).Magnitude
+                    if d < dist then
+                        dist = d
+                        closest = plr
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+RunService.Heartbeat:Connect(function()
+    if not getgenv().Aimlock.Enabled or not getgenv().Aimlock.Aiming then return end
+    Target = GetClosest()
+    if getgenv().Aimlock.AliveCheck and Target and Target.Character and Target.Character:FindFirstChild("Humanoid") and Target.Character.Humanoid.Health <= 0 then
+        Target = nil
+    end
+    if getgenv().Aimlock.Airshot and Target and Target.Character:FindFirstChild("Humanoid") then
+        if Target.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+            getgenv().Aimlock.Part = "RightFoot"
+        else
+            getgenv().Aimlock.Part = getgenv().Aimlock.OldPart
+        end
+    end
+    if Target and Target.Character and Target.Character:FindFirstChild(getgenv().Aimlock.Part) then
+        local pos = Target.Character[getgenv().Aimlock.Part].Position
+        if getgenv().Aimlock.Predict then
+            pos = pos + (Target.Character[getgenv().Aimlock.Part].Velocity / getgenv().Aimlock.Prediction)
+        end
+        if getgenv().Aimlock.Smooth > 0 then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, pos), getgenv().Aimlock.Smooth)
+        else
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, pos)
+        end
+    end
+end)
+
+local AimBox = Tabs.Combat:AddLeftGroupbox("Aimlock (PC Only)", "sword")
+AimBox:AddToggle("AimlockEnabled", {
+    Text = "Aim Assist",
+    Default = false,
+    Tooltip = "Activa el aimlock",
+    Callback = function(v)
+        getgenv().Aimlock.Enabled = v
+    end
+}):AddKeyPicker("AimlockKey", {
+    Default = "B",
+    SyncToggleState = true,
+    Mode = "Toggle",
+    Text = "Aimlock Key",
+    Callback = function(v)
+        getgenv().Aimlock.Aiming = v
+    end
+})
+
+AimBox:AddDropdown("AimPart", {
+    Values = {"Head", "UpperTorso", "HumanoidRootPart", "LowerTorso"},
+    Default = 1,
+    Text = "Aim Part",
+    Callback = function(v)
+        getgenv().Aimlock.Part = v
+        getgenv().Aimlock.OldPart = v
+    end
+})
+
+AimBox:AddToggle("TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) getgenv().Aimlock.TeamCheck = v end })
+AimBox:AddToggle("AliveCheck", { Text = "Alive Check", Default = false, Callback = function(v) getgenv().Aimlock.AliveCheck = v end })
+AimBox:AddToggle("Prediction", { Text = "Prediction", Default = false, Callback = function(v) getgenv().Aimlock.Predict = v end })
+AimBox:AddToggle("Airshot", { Text = "Airshot Function", Default = false, Callback = function(v) getgenv().Aimlock.Airshot = v end })
+AimBox:AddSlider("Smoothness", {
+    Text = "Smoothness",
+    Default = 0,
+    Min = 0,
+    Max = 1,
+    Rounding = 2,
+    Callback = function(v)
+        getgenv().Aimlock.Smooth = v
+    end
+})
+AimBox:AddSlider("PredictionPower", {
+    Text = "Prediction Movement",
+    Default = 0,
+    Min = 0,
+    Max = 50,
+    Rounding = 1,
+    Callback = function(v)
+        getgenv().Aimlock.Prediction = v
+    end
+})
+
+local FOVBox = Tabs.Combat:AddRightGroupbox("FOV", "circle")
+FOVBox:AddToggle("ShowFOV", {
+    Text = "Show FOV Circle",
+    Default = false,
+    Callback = function(v)
+        FOVCircle.Visible = v
+    end
+})
+FOVBox:AddSlider("FOVSize", {
+    Text = "FOV Radius",
+    Default = 0,
+    Min = 0,
+    Max = 300,
+    Rounding = 1,
+    Callback = function(v)
+        getgenv().Aimlock.Radius = v
+        FOVCircle.Radius = v
+    end
+})
+FOVBox:AddLabel("FOV Color"):AddColorPicker("FOVColor", {
+    Default = Color3.fromRGB(255, 0, 70),
+    Callback = function(v)
+        FOVCircle.Color = v
+    end
+})
+
+-- ==================== VISUALS TAB - ESP NAME ====================
+
+-- ==================== ESP NAME + FRIENDLY CHECK (DROPDOWN CON "----" POR DEFECTO) ====================
+local ESP_Name_Enabled = false
+local ESP_Settings = {
+    NameColor = Color3.fromRGB(255, 255, 255),
+    FriendColor = Color3.fromRGB(0, 255, 0),
+    NameSize = 14,
+    AnimationSpeed = 0.3
+}
+
+local FriendsList = {}
+local ESPNameTexts = {}
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Crear texto ESP
+local function CreateNameText(plr)
+    if plr == LocalPlayer then return end
+    if ESPNameTexts[plr] then 
+        ESPNameTexts[plr].text:Remove() 
+    end
+
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = ESP_Settings.NameColor
+    text.Size = 0
+    text.Center = true
+    text.Outline = true
+    text.OutlineColor = Color3.new(0, 0, 0)
+    text.Font = 2
+    text.Transparency = 0
+
+    ESPNameTexts[plr] = {
+        text = text,
+        currentTrans = 0,
+        targetTrans = 0,
+        currentSize = 0
+    }
+end
+
+-- Bucle principal del ESP
+RunService.RenderStepped:Connect(function()
+    for plr, data in pairs(ESPNameTexts) do
+        local char = plr.Character
+        local head = char and char:FindFirstChild("Head")
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+        if not ESP_Name_Enabled then
+            data.targetTrans = 0
+        else
+            if char and head and humanoid and humanoid.Health > 0 then
+                local headPos = head.Position + Vector3.new(0, 2.8, 0)
+                local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
+
+                if onScreen and screenPos.Z > 0 then
+                    data.targetTrans = 1
+                    data.text.Text = plr.DisplayName
+                    data.text.Position = Vector2.new(screenPos.X, screenPos.Y)
+
+                    local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
+                    data.text.Color = isFriend and ESP_Settings.FriendColor or ESP_Settings.NameColor
+
+                    data.text.Visible = true
+                else
+                    data.targetTrans = 0
+                    data.text.Visible = false
+                end
+            else
+                data.targetTrans = 0
+                data.text.Visible = false
+            end
+        end
+
+        data.currentTrans = data.currentTrans + (data.targetTrans - data.currentTrans) * ESP_Settings.AnimationSpeed
+        data.currentSize = data.currentSize + ((data.targetTrans == 1 and ESP_Settings.NameSize or 0) - data.currentSize) * ESP_Settings.AnimationSpeed
+
+        data.text.Transparency = math.clamp(data.currentTrans, 0, 1)
+        data.text.Size = math.floor(data.currentSize + 0.5)
+
+        if data.currentTrans < 0.01 then
+            data.text.Visible = false
+        end
+    end
+end)
+
+-- Setup jugadores
+local function SetupPlayer(plr)
+    if plr == LocalPlayer then return end
+    CreateNameText(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.6)
+        CreateNameText(plr)
+    end)
+end
+
+for _, plr in Players:GetPlayers() do SetupPlayer(plr) end
+Players.PlayerAdded:Connect(SetupPlayer)
+Players.PlayerRemoving:Connect(function(plr)
+    if ESPNameTexts[plr] then
+        ESPNameTexts[plr].text:Remove()
+        ESPNameTexts[plr] = nil
+    end
+end)
+
+-- ==================== UI CON DROPDOWN QUE EMPIEZA EN "----" ====================
+local ESPNameBox = Tabs.Visuals:AddLeftGroupbox("ESP Name", "type")
+
+ESPNameBox:AddToggle("ESPName", {
+    Text = "ESP Name",
+    Default = false,
+    Tooltip = "Nombres con animación + Friendly Check",
+    Callback = function(state)
+        ESP_Name_Enabled = state
+        Library:Notify(state and "ESP Name → ON" or "ESP Name → OFF", 4)
+    end
+}):AddColorPicker("NameColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Color Normal",
+    Callback = function(color)
+        ESP_Settings.NameColor = color
+    end
+}):AddColorPicker("FriendNameColor", {
+    Default = Color3.fromRGB(0, 255, 0),
+    Title = "Color Amigos",
+    Callback = function(color)
+        ESP_Settings.FriendColor = color
+    end
+})
+
+-- Dropdown con "----" por defecto
+local playerDropdown = ESPNameBox:AddDropdown("FriendPlayerSelect", {
+    Text = "Select Player",
+    Values = {"----"},  -- Empieza con esto para indicar que no hay selección
+    Default = 1,        -- Selecciona "----" por defecto
+    Callback = function() end
+})
+
+-- Función para actualizar la lista de jugadores
+local function UpdatePlayerDropdown()
+    local values = {"----"}  -- Siempre mantiene "----" como primera opción
+    
+    for _, plr in Players:GetPlayers() do
+        if plr ~= LocalPlayer then
+            table.insert(values, plr.DisplayName .. " (" .. plr.Name .. ")")
+        end
+    end
+    
+    if #values == 1 then  -- Solo "----"
+        values = {"---- (No hay jugadores)"}
+    end
+    
+    playerDropdown:SetValues(values)
+    
+    -- IMPORTANTE: Forzar que siga seleccionado "----" si no había selección previa
+    -- Solo cambia si el usuario selecciona manualmente
+    if playerDropdown.Value == "----" or playerDropdown.Value == nil or not table.find(values, playerDropdown.Value) then
+        playerDropdown:SetValue("----")
+    end
+end
+
+-- Actualizar al cargar
+UpdatePlayerDropdown()
+
+-- Actualizar cuando entren/salgan jugadores
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then
+        task.wait(0.1)
+        UpdatePlayerDropdown()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.wait(0.1)
+    UpdatePlayerDropdown()
+end)
+
+-- Botón Confirmar amigo
+ESPNameBox:AddButton("Confirm Friend (Green Name)", function()
+    local selected = playerDropdown.Value
+    
+    if not selected or selected == "----" or selected == "---- (No hay jugadores)" then
+        Library:Notify("Selecciona un jugador primero", 3)
+        return
+    end
+
+    local username = selected:match("%((.-)%)")
+    local displayname = selected:match("(.-)%s%(") or selected
+    local targetName = username or displayname
+
+    if not table.find(FriendsList, targetName) then
+        table.insert(FriendsList, targetName)
+        Library:Notify("Amigo añadido: " .. selected .. " → nombre en verde", 4)
+        -- Opcional: volver a "----" después de confirmar
+        playerDropdown:SetValue("----")
+    else
+        Library:Notify("Ya está en la lista de amigos", 3)
+    end
+end)
+
+-- Botón Limpiar lista
+ESPNameBox:AddButton("Clear Friends List", function()
+    FriendsList = {}
+    Library:Notify("Lista de amigos limpiada", 4)
+    playerDropdown:SetValue("----")
+end)
+
+-- ==================== ESP BOX (CUADRADO 2D - SIN TRACER) ====================
+local ESP_Box_Enabled = false
+local ESP_Box_Settings = {
+    BoxColor = Color3.fromRGB(255, 255, 255),
+    FriendColor = Color3.fromRGB(0, 255, 0),
+    Thickness = 2,
+    TeamCheck = false
+}
+
+local FriendsList = {}  -- Usa la misma lista de amigos que en ESP Name
+local ESPBoxes = {}     -- [player] = { box = Drawing.Square }
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Crear el box para cada jugador
+local function CreateESPBox(plr)
+    if plr == LocalPlayer or ESPBoxes[plr] then return end
+
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = ESP_Box_Settings.BoxColor
+    box.Thickness = ESP_Box_Settings.Thickness
+    box.Filled = false
+    box.Transparency = 1
+
+    ESPBoxes[plr] = { box = box }
+end
+
+-- Limpiar al salir del servidor
+Players.PlayerRemoving:Connect(function(plr)
+    if ESPBoxes[plr] then
+        ESPBoxes[plr].box:Remove()
+        ESPBoxes[plr] = nil
+    end
+end)
+
+-- Crear para jugadores actuales y nuevos
+for _, plr in Players:GetPlayers() do
+    if plr ~= LocalPlayer then CreateESPBox(plr) end
+end
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then CreateESPBox(plr) end
+end)
+
+-- Bucle principal
+RunService.RenderStepped:Connect(function()
+    if not ESP_Box_Enabled then
+        for _, data in pairs(ESPBoxes) do
+            data.box.Visible = false
+        end
+        return
+    end
+
+    for plr, drawings in pairs(ESPBoxes) do
+        local char = plr.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local head = char and char:FindFirstChild("Head")
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+        if not char or not hrp or not head or not humanoid or humanoid.Health <= 0 then
+            drawings.box.Visible = false
+            continue
+        end
+
+        -- Team Check
+        if ESP_Box_Settings.TeamCheck and plr.Team == LocalPlayer.Team then
+            drawings.box.Visible = false
+            continue
+        end
+
+        -- Color amigo
+        local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
+        drawings.box.Color = isFriend and ESP_Box_Settings.FriendColor or ESP_Box_Settings.BoxColor
+
+        -- Posiciones
+        local headPos = head.Position + Vector3.new(0, 0.5, 0)
+        local legPos = hrp.Position - Vector3.new(0, 3, 0)
+
+        local headScreen, headOnScreen = Camera:WorldToViewportPoint(headPos)
+        local legScreen, legOnScreen = Camera:WorldToViewportPoint(legPos)
+        local rootScreen, rootOnScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+        if headOnScreen or legOnScreen or rootOnScreen then
+            local boxHeight = math.abs(headScreen.Y - legScreen.Y)
+            local boxWidth = boxHeight / 2
+
+            local boxX = rootScreen.X - boxWidth / 2
+            local boxY = headScreen.Y
+
+            drawings.box.Size = Vector2.new(boxWidth, boxHeight)
+            drawings.box.Position = Vector2.new(boxX, boxY)
+            drawings.box.Thickness = ESP_Box_Settings.Thickness
+            drawings.box.Visible = true
+        else
+            drawings.box.Visible = false
+        end
+    end
+end)
+
+-- ==================== UI DEL ESP BOX ====================
+local ESPBoxGroup = Tabs.Visuals:AddRightGroupbox("ESP Box", "square")
+
+ESPBoxGroup:AddToggle("ESPBoxEnabled", {
+    Text = "ESP Box",
+    Default = false,
+    Tooltip = "Cuadrado 2D alrededor de jugadores",
+    Callback = function(state)
+        ESP_Box_Enabled = state
+        Library:Notify(state and "ESP Box → ON" or "ESP Box → OFF", 4)
+    end
+}):AddColorPicker("BoxColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "Color Normal",
+    Callback = function(color)
+        ESP_Box_Settings.BoxColor = color
+    end
+})
+
+ESPBoxGroup:AddSlider("BoxThickness", {
+    Text = "Thickness",
+    Min = 0,
+    Max = 6,
+    Default = 0,
+    Rounding = 1,
+    Callback = function(v)
+        ESP_Box_Settings.Thickness = v
+    end
+})
+
+ESPBoxGroup:AddToggle("BoxTeamCheck", {
+    Text = "Team Check",
+    Default = false,
+    Callback = function(state)
+        ESP_Box_Settings.TeamCheck = state
+    end
+})
+
+
+-- ==================== PLAYER TAB - ANTI AFK, FULLBRIGHT, LOW GRAPHICS ====================
+local CharacterBox = Tabs.Player:AddLeftGroupbox("Utilities", "wrench")
+
+local Lighting = game:GetService("Lighting")
+local OldLighting = {
+    Brightness = Lighting.Brightness,
+    GlobalShadows = Lighting.GlobalShadows,
+    FogEnd = Lighting.FogEnd,
+    FogStart = Lighting.FogStart,
+    ClockTime = Lighting.ClockTime,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient
+}
+local FullbrightConnection
+
+CharacterBox:AddToggle("Fullbright", {
+    Text = "Fullbright",
+    Default = false,
+    Callback = function(state)
+        if state then
+            Lighting.Brightness = 3
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 100000
+            Lighting.FogStart = 0
+            Lighting.ClockTime = 12
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("Atmosphere") then
+                    v.Enabled = false
+                end
+            end
+            FullbrightConnection = Lighting.ChildAdded:Connect(function(child)
+                if state and (child:IsA("BloomEffect") or child:IsA("ColorCorrectionEffect") or child:IsA("SunRaysEffect") or child:IsA("Atmosphere")) then
+                    child.Enabled = false
+                end
+            end)
+            Library:Notify("Fullbright Activado", 3)
+        else
+            Lighting.Brightness = OldLighting.Brightness
+            Lighting.GlobalShadows = OldLighting.GlobalShadows
+            Lighting.FogEnd = OldLighting.FogEnd
+            Lighting.FogStart = OldLighting.FogStart
+            Lighting.ClockTime = OldLighting.ClockTime
+            Lighting.Ambient = OldLighting.Ambient
+            Lighting.OutdoorAmbient = OldLighting.OutdoorAmbient
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") then
+                    v.Enabled = true
+                end
+            end
+            if FullbrightConnection then
+                FullbrightConnection:Disconnect()
+                FullbrightConnection = nil
+            end
+            Library:Notify("Fullbright Desactivado", 3)
+        end
+    end
+})
+
+local AntiAFKConnection
+CharacterBox:AddToggle("Anti-AFK", {
+    Text = "Anti-AFK",
+    Default = false,
+    Callback = function(state)
+        if state then
+            AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+            end)
+            Library:Notify("Anti-AFK Activado", 3)
+        else
+            if AntiAFKConnection then
+                AntiAFKConnection:Disconnect()
+                AntiAFKConnection = nil
+            end
+            Library:Notify("Anti-AFK Desactivado", 3)
+        end
+    end
+})
+
+local function UltraLowGraphics()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    game.Lighting.GlobalShadows = false
+    game.Lighting.FogEnd = 9e9
+    game.Lighting.Brightness = 1
+    if game.Lighting:FindFirstChild("Atmosphere") then
+        game.Lighting.Atmosphere:Destroy()
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke")
+        or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam")
+        or obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
+            obj:Destroy()
+        end
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.Plastic
+            obj.Color = Color3.new(0.5, 0.5, 0.5)
+            if obj:IsA("MeshPart") then
+                obj.TextureID = ""
+                obj.Material = Enum.Material.SmoothPlastic
+            end
+        end
+        if obj:IsA("SpecialMesh") or obj:IsA("BlockMesh") or obj:IsA("CylinderMesh") then
+            obj.TextureId = ""
+        end
+    end
+    for _, effect in ipairs(game.Lighting:GetChildren()) do
+        if effect:IsA("PostEffect") then
+            effect.Enabled = false
+        end
+    end
+    Library:Notify("Ultra Low Graphics ACTIVADO (Texturas eliminadas +200 FPS)", 5)
+end
+
+CharacterBox:AddToggle("UltraLowGFX", {
+    Text = "Low Graphic",
+    Default = false,
+    Tooltip = "Elimina TODAS las texturas de Parts/Modelos + partículas + sombras",
+    Callback = function(state)
+        if state then
+            UltraLowGraphics()
+        else
+            Library:Notify("Reinicia el juego para restaurar texturas", 4)
+        end
+    end
+})
+
+
+-- ==================== SETTINGS ====================
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetFolder("NyxExotic")
+ThemeManager:SetFolder("NyxExotic")
+ThemeManager:ApplyToTab(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Tabs.Settings:AddLeftGroupbox("Menu"):AddToggle("CustomCursor", {
+    Text = "Custom Cursor",
+    Default = true,
+    Callback = function(v) Library.ShowCustomCursor = v end
+})
+Tabs.Settings:AddLeftGroupbox("Menu"):AddLabel("Menu Bind: M (Fixed)")
+Tabs.Settings:AddLeftGroupbox("Menu"):AddButton("Unload", function() Library:Unload() end)
+
+game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
+    if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
+end)
+
+Library:Notify("Nyx Exotic, [Open Menu] (M)", 6)
+SaveManager:LoadAutoloadConfig()
