@@ -26,16 +26,16 @@ local function sendWebhook(embed)
 end
 -- ==================== CONFIG ====================
 local DEFAULT_CONFIG = {
-    PublicKeyRaw = "free2025",
-    StartDate = "18/12/2025 00:00",
-    EndDate = "19/12/2025 23:59",
+    PublicKeyRaw = "newfreemium",
+    StartDate = "20/12/2025 00:00",
+    EndDate = "22/12/2025 23:59",
 }
 local Config = {
     PremiumKeys = {},  -- Se cargará dinámicamente desde el repo JSON
     PublicKeyRaw = "free2025",
     PublicKeyClean = "",
-    StartDate = "18/12/2025 00:00",
-    EndDate = "19/12/2025 23:59",
+    StartDate = "20/12/2025 00:00",
+    EndDate = "22/12/2025 23:59",
     AuthFile = "NYX_Auth.key",
     FreemiumURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/Freemium",
     PremiumURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/Premium",
