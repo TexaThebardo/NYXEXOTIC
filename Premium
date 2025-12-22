@@ -1028,18 +1028,18 @@ local Tracer = {
     Enabled = false,
     Color = Color3.fromRGB(255, 255, 255),
     Thickness = 2,
-    From = "Bottom", -- "Bottom", "Middle", "Top"
-    Part = "Head", -- Target body part
-    TeamCheck = false,
-    AliveCheck = true,
-    MaxDistance = 0,
+    From = "Bottom",          -- "Bottom", "Middle", "Top"
+    Part = "Head",            -- Target body part
+    TeamCheck = false,        -- If true → hides tracers on teammates
+    AliveCheck = true,        -- Always active (hides if dead)
+    MaxDistance = 0,          -- 0 = unlimited
     CircleEnabled = true,
     CircleRadius = 8,
     CircleThickness = 2,
-    CircleFilled = false,
-    AnimationSpeed = 0.3  -- Velocidad de animación suave (igual que ESP Name/Box)
+    CircleFilled = false
 }
-local TracerLines = {} -- [player] = { line = Drawing.Line, circle = Drawing.Circle, currentTrans = 0, targetTrans = 0 }
+
+local TracerLines = {}   -- [player] = { line = Drawing.Line, circle = Drawing.Circle }
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -1048,11 +1048,12 @@ local LocalPlayer = Players.LocalPlayer
 -- Create line + circle for a player
 local function CreateTracer(plr)
     if plr == LocalPlayer or TracerLines[plr] then return end
+
     local line = Drawing.new("Line")
     line.Visible = false
     line.Color = Tracer.Color
     line.Thickness = Tracer.Thickness
-    line.Transparency = 0  -- Empezamos invisible
+    line.Transparency = 1
 
     local circle = Drawing.new("Circle")
     circle.Visible = false
@@ -1061,14 +1062,9 @@ local function CreateTracer(plr)
     circle.Radius = Tracer.CircleRadius
     circle.Filled = Tracer.CircleFilled
     circle.NumSides = 20
-    circle.Transparency = 0
+    circle.Transparency = 1
 
-    TracerLines[plr] = {
-        line = line,
-        circle = circle,
-        currentTrans = 0,
-        targetTrans = 0
-    }
+    TracerLines[plr] = { line = line, circle = circle }
 end
 
 -- Clean up when player leaves
@@ -1088,13 +1084,14 @@ Players.PlayerAdded:Connect(function(plr)
     if plr ~= LocalPlayer then CreateTracer(plr) end
 end)
 
--- Main loop con animación suave
+-- Main loop (RenderStepped for smoothness)
 RunService.RenderStepped:Connect(function()
     if not Tracer.Enabled then
         for _, data in pairs(TracerLines) do
-            data.targetTrans = 0
+            data.line.Visible = false
+            data.circle.Visible = false
         end
-        -- No return aquí para que siga animando la desaparición
+        return
     end
 
     local viewportSize = Camera.ViewportSize
@@ -1105,64 +1102,76 @@ RunService.RenderStepped:Connect(function()
 
     for plr, data in pairs(TracerLines) do
         local char = plr.Character
-        local line = data.line
-        local circle = data.circle
-
         if not char or not char:FindFirstChild("HumanoidRootPart") then
-            data.targetTrans = 0
-        else
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if Tracer.AliveCheck and (not humanoid or humanoid.Health <= 0) then
-                data.targetTrans = 0
-            elseif Tracer.TeamCheck and plr.Team == LocalPlayer.Team then
-                data.targetTrans = 0
-            else
-                local targetPart = char:FindFirstChild(Tracer.Part) or char:FindFirstChild("Head")
-                if not targetPart then
-                    data.targetTrans = 0
-                else
-                    if Tracer.MaxDistance > 0 then
-                        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot and (myRoot.Position - targetPart.Position).Magnitude > Tracer.MaxDistance then
-                            data.targetTrans = 0
-                        end
-                    end
+            data.line.Visible = false
+            data.circle.Visible = false
+            continue
+        end
 
-                    local targetPos = targetPart.Position
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if Tracer.AliveCheck and (not humanoid or humanoid.Health <= 0) then
+            data.line.Visible = false
+            data.circle.Visible = false
+            continue
+        end
 
-                    if onScreen and screenPos.Z > 0 then
-                        data.targetTrans = 1
+        -- Team Check: hide tracers on teammates
+        if Tracer.TeamCheck and plr.Team == LocalPlayer.Team then
+            data.line.Visible = false
+            data.circle.Visible = false
+            continue
+        end
 
-                        -- Line
-                        line.From = Vector2.new(screenCenterX, fromY)
-                        line.To = Vector2.new(screenPos.X, screenPos.Y)
-                        line.Color = Tracer.Color
-                        line.Thickness = Tracer.Thickness
+        -- Get target part
+        local targetPart = char:FindFirstChild(Tracer.Part)
+        if not targetPart then
+            targetPart = char:FindFirstChild("Head") -- Fallback to Head
+            if not targetPart then
+                data.line.Visible = false
+                data.circle.Visible = false
+                continue
+            end
+        end
 
-                        -- Circle
-                        if Tracer.CircleEnabled then
-                            circle.Position = Vector2.new(screenPos.X, screenPos.Y)
-                            circle.Radius = Tracer.CircleRadius
-                            circle.Thickness = Tracer.CircleThickness
-                            circle.Color = Tracer.Color
-                        end
-                    else
-                        data.targetTrans = 0
-                    end
+        -- Max distance check
+        if Tracer.MaxDistance > 0 then
+            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                local dist = (myRoot.Position - targetPart.Position).Magnitude
+                if dist > Tracer.MaxDistance then
+                    data.line.Visible = false
+                    data.circle.Visible = false
+                    continue
                 end
             end
         end
 
-        -- Animación suave de transparencia
-        data.currentTrans = data.currentTrans + (data.targetTrans - data.currentTrans) * Tracer.AnimationSpeed
+        -- Exact position of the part center
+        local targetPos = targetPart.Position
+        local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
 
-        line.Transparency = math.clamp(data.currentTrans, 0, 1)
-        circle.Transparency = math.clamp(data.currentTrans, 0, 1)
+        if onScreen and screenPos.Z > 0 then
+            -- Line
+            data.line.From = Vector2.new(screenCenterX, fromY)
+            data.line.To = Vector2.new(screenPos.X, screenPos.Y)
+            data.line.Color = Tracer.Color
+            data.line.Thickness = Tracer.Thickness
+            data.line.Visible = true
 
-        -- Mostrar/ocultar según transparencia (evita dibujar si está casi invisible)
-        line.Visible = data.currentTrans > 0.01
-        circle.Visible = Tracer.CircleEnabled and data.currentTrans > 0.01
+            -- Circle at target
+            if Tracer.CircleEnabled then
+                data.circle.Position = Vector2.new(screenPos.X, screenPos.Y)
+                data.circle.Radius = Tracer.CircleRadius
+                data.circle.Thickness = Tracer.CircleThickness
+                data.circle.Color = Tracer.Color
+                data.circle.Visible = true
+            else
+                data.circle.Visible = false
+            end
+        else
+            data.line.Visible = false
+            data.circle.Visible = false
+        end
     end
 end)
 
@@ -1182,6 +1191,7 @@ ESPV1Box:AddToggle("TracerESP", {
         Tracer.Color = col
     end
 })
+
 ESPV1Box:AddDropdown("TracerPart", {
     Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
     Default = 1,
@@ -1191,6 +1201,7 @@ ESPV1Box:AddDropdown("TracerPart", {
         Library:Notify("Target Part: " .. value, 2)
     end
 })
+
 ESPV1Box:AddDropdown("TracerFrom", {
     Values = {"Bottom", "Middle", "Top"},
     Default = 1,
@@ -1199,6 +1210,7 @@ ESPV1Box:AddDropdown("TracerFrom", {
         Tracer.From = value
     end
 })
+
 ESPV1Box:AddSlider("TracerThickness", {
     Text = "Line Thickness",
     Min = 0,
@@ -1209,6 +1221,7 @@ ESPV1Box:AddSlider("TracerThickness", {
         Tracer.Thickness = v
     end
 })
+
 ESPV1Box:AddToggle("TracerCircle", {
     Text = "Circle on Target",
     Default = true,
@@ -1216,26 +1229,29 @@ ESPV1Box:AddToggle("TracerCircle", {
         Tracer.CircleEnabled = state
     end
 })
+
 ESPV1Box:AddSlider("TracerCircleSize", {
     Text = "Circle Size",
     Min = 0,
     Max = 25,
-    Default = 8,
+    Default = 0,
     Rounding = 1,
     Callback = function(v)
         Tracer.CircleRadius = v
     end
 })
+
 ESPV1Box:AddSlider("TracerCircleThick", {
     Text = "Circle Thickness",
     Min = 0,
     Max = 6,
-    Default = 2,
+    Default = 0,
     Rounding = 1,
     Callback = function(v)
         Tracer.CircleThickness = v
     end
 })
+
 ESPV1Box:AddToggle("TracerTeamCheck", {
     Text = "Team Check",
     Default = false,
@@ -1244,6 +1260,7 @@ ESPV1Box:AddToggle("TracerTeamCheck", {
         Tracer.TeamCheck = state
     end
 })
+
 ESPV1Box:AddSlider("TracerMaxDist", {
     Text = "Distance",
     Min = 0,
