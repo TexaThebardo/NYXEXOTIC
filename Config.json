@@ -1,7 +1,7 @@
 {
   "OwnerHWID": "",
   "AdminHWIDs": {
-    "hwid_admin1_aqui": true,
-    "hwid_admin2_aqui": true
+    "hwid_admin1_aqui": false,
+    "hwid_admin2_aqui": false
   }
 }
