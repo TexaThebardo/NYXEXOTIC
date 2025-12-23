@@ -12,7 +12,7 @@ local SaveManager = loadstring(game:HttpGet(repo .. "SaveManager.lua"))()
 local Window = Library:CreateWindow({
     Title = " И  Ξ Ｘ | PRM",
     Icon = 87256533253057,
-    Footer = "Versión: 3.2 ¡Beta! | PREMIUM SCRIPT",
+    Footer = "Versión: 2.5 ¡Beta! | PREMIUM SCRIPT",
     AutoShow = true,
     ShowCustomCursor = false,
     NotifySide = "Right"
@@ -2613,7 +2613,7 @@ ExploitsBox:AddToggle("AutoSpendSpamToggle", {
         end
     end
 })
-local FPSBoosterBox = Tabs.Player:AddLeftGroupbox("FPS Booster", "zap")
+local FPSBoosterBox = Tabs.Player:AddRightGroupbox("FPS Booster", "zap")
 
 getgenv().TargetFPS = 60
 getgenv().UltraLowEnabled = false
@@ -2678,6 +2678,155 @@ FPSBoosterBox:AddButton("Low Graphics", function()
             end
         end)
     end
+end)
+
+local SpawnBox = Tabs.Player:AddLeftGroupbox("Custom Spawn Point", "map-pin")
+
+getgenv().CustomSpawnPos = nil
+getgenv().SpawnOnDeathEnabled = false  -- Died Spawn toggle
+local SAFE_OFFSET_Y = 4
+
+-- Predefined locations
+local PredefinedLocations = {
+    ["Default Spawn"] = Vector3.new(0, 0, 0),
+    ["Safe House Roof"] = Vector3.new(-145.32, 48.50, -320.67),
+    ["Gun Store"] = Vector3.new(120.45, 15.20, -180.34),
+    ["Hospital Roof"] = Vector3.new(-50.78, 65.80, 210.12),
+    ["Bank"] = Vector3.new(85.20, 12.50, 45.89),
+    ["Apartments"] = Vector3.new(-220.15, 20.30, -90.45),
+    ["Gas Station"] = Vector3.new(300.67, 10.00, -400.23),
+    ["Police Station"] = Vector3.new(-80.45, 15.00, 150.78)
+}
+
+local function CopyCurrentPosition()
+    local char = game.Players.LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        Library:Notify("No character found", 4)
+        return
+    end
+    local hrp = char.HumanoidRootPart
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {char}
+    local ray = workspace:Raycast(hrp.Position, Vector3.new(0, -800, 0), params)
+    local groundY = ray and ray.Position.Y or hrp.Position.Y - 4
+    local spawnY = groundY + 3
+    local posStr = string.format("%.2f, %.2f, %.2f", hrp.Position.X, spawnY, hrp.Position.Z)
+    if setclipboard then setclipboard(posStr) end
+    Library.Options.SpawnCoords:SetValue(posStr)
+    Library:Notify("Position copied and pasted into coordinates", 5)
+end
+
+local function SetSpawnPosition(posText)
+    local x, y, z = posText:match("([%-%d%.]+)%s*,%s*([%-%d%.]+)%s*,%s*([%-%d%.]+)")
+    if not (x and y and z) then
+        Library:Notify("Invalid coordinates format", 4)
+        return false
+    end
+    getgenv().CustomSpawnPos = Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+    Library:Notify("Custom spawn point SET - Die to test", 5)
+    return true
+end
+
+local function SetPredefinedSpawn(locationName)
+    if locationName == "Default Spawn" then
+        getgenv().CustomSpawnPos = nil
+        Library:Notify("Spawn point cleared (default spawn)", 4)
+        return
+    end
+    local pos = PredefinedLocations[locationName]
+    if pos then
+        getgenv().CustomSpawnPos = pos
+        Library:Notify("Spawn set to: " .. locationName, 5)
+    end
+end
+
+local function ClearSpawnPosition()
+    getgenv().CustomSpawnPos = nil
+    Library.Options.SpawnCoords:SetValue("")
+    Library:Notify("Spawn point cleared", 4)
+end
+
+-- Died Spawn: Save position on death
+local function OnDied()
+    if not getgenv().SpawnOnDeathEnabled then return end
+    local char = game.Players.LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {char}
+    local ray = workspace:Raycast(hrp.Position, Vector3.new(0, -800, 0), params)
+    local groundY = ray and ray.Position.Y or hrp.Position.Y - 4
+    getgenv().CustomSpawnPos = Vector3.new(hrp.Position.X, groundY + 3, hrp.Position.Z)
+    Library:Notify("Died Spawn ACTIVE - Next respawn at death location", 5)
+end
+
+-- Auto respawn at custom position (or death position if enabled)
+game.Players.LocalPlayer.CharacterAdded:Connect(function(char)
+    if not getgenv().CustomSpawnPos then return end
+    local hrp = char:WaitForChild("HumanoidRootPart", 10)
+    if not hrp then return end
+    task.wait(0.15)
+    hrp.CFrame = CFrame.new(getgenv().CustomSpawnPos + Vector3.new(0, SAFE_OFFSET_Y, 0))
+    Library:Notify("Respawned at saved spawn point", 4)
+end)
+
+-- Detect death to save position
+game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Died:Connect(OnDied)
+game.Players.LocalPlayer.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").Died:Connect(OnDied)
+end)
+
+-- UI
+SpawnBox:AddToggle("DiedSpawn", {
+    Text = "Died Spawn",
+    Default = false,
+    Callback = function(state)
+        getgenv().SpawnOnDeathEnabled = state
+        if state then
+            Library:Notify("Died Spawn ENABLED - Next death will save position", 5)
+        else
+            Library:Notify("Died Spawn DISABLED", 4)
+        end
+    end
+})
+
+SpawnBox:AddButton("Copy Coord", function()
+    CopyCurrentPosition()
+end)
+
+SpawnBox:AddInput("SpawnCoords", {
+    Text = "Coordinates (x, y, z)",
+    Default = "",
+    Placeholder = "Example: -145.32, 48.50, -320.67",
+    Callback = function() end
+})
+
+SpawnBox:AddButton("Set Spawn", function()
+    local text = Library.Options.SpawnCoords.Value
+    if text == "" and getclipboard then text = getclipboard() end
+    if text ~= "" then
+        SetSpawnPosition(text)
+    else
+        Library:Notify("No coordinates to set", 4)
+    end
+end)
+
+SpawnBox:AddDivider()
+
+SpawnBox:AddDropdown("LocationMap", {
+    Text = "Location Map",
+    Values = {"Default Spawn", "Safe House Roof", "Gun Store", "Hospital Roof", "Bank", "Apartments", "Gas Station", "Police Station"},
+    Default = 1,
+    Callback = function(value)
+        SetPredefinedSpawn(value)
+    end
+})
+
+SpawnBox:AddButton("Clear Spawn Point", function()
+    ClearSpawnPosition()
+    Library.Options.LocationMap:SetValue("Default Spawn")
 end)
 
 ThemeManager:SetLibrary(Library)
