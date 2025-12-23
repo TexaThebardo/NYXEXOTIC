@@ -26,13 +26,13 @@ local function sendWebhook(embed)
 end
 -- ==================== CONFIG ====================
 local DEFAULT_CONFIG = {
-    PublicKeyRaw = "newfreemium",
+    PublicKeyRaw = "NewUpdateFix!",
     StartDate = "23/12/2025 00:00",
     EndDate = "26/12/2025 23:59",
 }
 local Config = {
     PremiumKeys = {},  -- Se cargará dinámicamente desde el repo JSON
-    PublicKeyRaw = "free2025",
+    PublicKeyRaw = "NewUpdateFix!",
     PublicKeyClean = "",
     StartDate = "23/12/2025 00:00",
     EndDate = "26/12/2025 23:59",
