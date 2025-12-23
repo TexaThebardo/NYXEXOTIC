@@ -19,7 +19,6 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-    Main      = Window:AddTab("Home", "layout-dashboard"),
     Combat    = Window:AddTab("Combat", "crosshair"),
     Visuals   = Window:AddTab("Visuals", "eye"),
     Player    = Window:AddTab("Player", "user"),
@@ -27,251 +26,153 @@ local Tabs = {
     Settings  = Window:AddTab("Settings", "settings")
 }
 
-local PlayerInfo = Tabs.Main:AddLeftGroupbox("Player Info", "accessibility")
+local ExploitsBox = Tabs.Player:AddRightGroupbox("Utilities (Mobile)", "phone")
+local AutoFarmBox = Tabs["Auto Farm"]:AddLeftGroupbox("Auto Farm", "bot")
 
-local UsernameLabel = PlayerInfo:AddLabel("👤 Username: " .. game.Players.LocalPlayer.Name)
-local DisplayLabel = PlayerInfo:AddLabel("📝 Display: @" .. game.Players.LocalPlayer.DisplayName)
-local UserIDLabel = PlayerInfo:AddLabel("🔢 User ID: " .. game.Players.LocalPlayer.UserId)
-local PlaytimeLabel = PlayerInfo:AddLabel("⏰ Playtime: 00:00")
-local RegionLabel     = PlayerInfo:AddLabel("🌐 Pais/Región: Unknown")
+-- ============== TUTORIAL ==============
+AutoFarmBox:AddLabel("<font color='rgb(230, 163, 33)'><b>Marshmellow Farm Tutorial</b></font>", true)
+AutoFarmBox:AddLabel("<b>Required Tools:</b>", true)
+AutoFarmBox:AddLabel("• You must have at least <b>2 out of these 3 tools</b>:", true)
+AutoFarmBox:AddLabel("   - Water", true)
+AutoFarmBox:AddLabel("   - Sugar Block Bag", true)
+AutoFarmBox:AddLabel("   - Gelatin", true)
+AutoFarmBox:AddLabel("• If 2 or more essential tools are missing → the farm will stop automatically.", true)
+AutoFarmBox:AddDivider()
 
+AutoFarmBox:AddLabel("<font color='rgb(230, 163, 33)'><b>Extra Info</b></font>", true)
+AutoFarmBox:AddLabel("• Press <b>P</b> or the toggle to turn on/off at any time.", true)
+AutoFarmBox:AddLabel("• Stay close to the interaction spot for perfect performance.", true)
+AutoFarmBox:AddLabel("• If you die or respawn, the farm resumes automatically.", true)
+AutoFarmBox:AddDivider()
 
-local ServerInfo = Tabs.Main:AddRightGroupbox("Server Info", "server")
-local GameLabel     = ServerInfo:AddLabel("Game: Loading...")
-local CreatorLabel  = ServerInfo:AddLabel("Creator: Loading...")
-local PlaceIDLabel  = ServerInfo:AddLabel("Place ID: " .. game.PlaceId)
-local JobIDLabel    = ServerInfo:AddLabel("Job ID: " .. (game.JobId == "" and "Private" or string.sub(game.JobId, 1, 20).."..."))
-local PlayersLabel  = ServerInfo:AddLabel("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
-
-spawn(function()
-    local success, info = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    end)
-    if success then
-        GameLabel:SetText("Game: " .. info.Name)
-        CreatorLabel:SetText("Creator: " .. (info.Creator.Name or "Roblox"))
-    end
-end)
-
-local function UpdatePlayers()
-    local current = #game.Players:GetPlayers()
-    local max = game.Players.MaxPlayers
-    local color = current >= max * 0.8 and "ff0000" or current >= max * 0.5 and "ffff00" or "00ff00"
-    PlayersLabel:SetText("Players: <font color='#" .. color .. "'>" .. current .. " / " .. max .. "</font>")
-end
-UpdatePlayers()
-game.Players.PlayerAdded:Connect(UpdatePlayers)
-game.Players.PlayerRemoving:Connect(UpdatePlayers)
-
-local ChangelogBox = Tabs.Main:AddLeftGroupbox("Changelog v1.6.9", "scroll-text")
-
-ChangelogBox:AddLabel("<font color='#AF42FF'>NYX EXOTIC • 10 Dic 2025</font>", true)
-ChangelogBox:AddDivider()
-ChangelogBox:AddLabel("<font color='#00ff8c'>IMPLEMENTED</font>", true)
-ChangelogBox:AddLabel("[+] Added Auto Spend Clip", true)
-ChangelogBox:AddLabel("[+] Added Show Give Button (Mobile Only)", true)
-ChangelogBox:AddLabel("[+] Added Insta proximity", true)
-ChangelogBox:AddLabel("[+] Added Custom Name", true)
-ChangelogBox:AddDivider()
-ChangelogBox:AddLabel("<font color='#ffff64'>FIXED & REMOVE</font>", true)
-ChangelogBox:AddLabel("[-] Anti-AFK removed", true)
-ChangelogBox:AddLabel("[-] Anti-Kick removed", true)
-ChangelogBox:AddLabel("[-] Anti-Destroyed removed", true)
-ChangelogBox:AddLabel("[-] Skin change buttons removed", true)
-ChangelogBox:AddDivider()
-ChangelogBox:AddLabel("<font color='#FF2E2E'>COMING SOON</font>", true)
-ChangelogBox:AddLabel("[∞] ", false)
-ChangelogBox:AddLabel("[∞] ", false)
-ChangelogBox:AddLabel("[∞] ", false)
-ChangelogBox:AddDivider()
-ChangelogBox:AddLabel("<font color='#ff9bff'>By xSh4dow/NYX</font>", true)
-
-local SystemInfo = Tabs.Main:AddRightGroupbox("System Info", "monitor")
-
-local FPSLabel      = SystemInfo:AddLabel("zap FPS: --")  -- zap en lugar de activity
-local PingLabel     = SystemInfo:AddLabel("wifi Ping: -- ms")  -- wifi en lugar de zap
-local RAMLabel      = SystemInfo:AddLabel("database RAM: -- MB")  -- database en lugar de memory-stick
-local PlatformLabel = SystemInfo:AddLabel("laptop Plataforma: Detecting...")  -- laptop para PC
-local ExecutorLabel = SystemInfo:AddLabel("code Executor: Detecting...")  -- code en lugar de terminal
-local StatusLabel   = SystemInfo:AddLabel("check Status: Loaded")  -- check en lugar de check-circle
-
-spawn(function()
-    local exec = "Unknown"
-    local platform = "PC"
-
-    -- Detectar executor (tu código original)
-    if identifyexecutor then exec = identifyexecutor()
-    elseif getexecutorname then exec = getexecutorname()
-    elseif syn then exec = "Synapse X"
-    elseif KRNL_LOADED then exec = "Krnl"
-    elseif Fluxus then exec = "Fluxus"
-    elseif is_solara then exec = "Solara"
-    elseif gethui then exec = "Delta / Codex"
-    end
-
-    -- Detectar plataforma (método simple y 100% compatible)
-    local UIS = game:GetService("UserInputService")
-    if UIS.TouchEnabled and not UIS.KeyboardEnabled then
-        platform = "Mobile"
-        if string.find(game:GetService("UserGameSettings"):GetPlatform(), "iOS") then
-            platform = "iOS"
-        else
-            platform = "Android"
-        end
-    elseif UIS.GamepadEnabled then
-        platform = "Console"
-    else
-        platform = "PC"
-    end
-
-    -- Icono según plataforma (estos SÍ funcionan)
-    local platformIcon = platform == "PC" and "Laptop"
-                      or platform == "Android" and "SmartPhone"
-                      or platform == "iOS" and "Tablet"
-                      or "Gamepad"
-
-    PlatformLabel:SetText(platformIcon .. " Plataforma: " .. platform)
-    ExecutorLabel:SetText("Code Executor: " .. exec)
-    StatusLabel:SetText("check Status: 🟢 Loaded")
-end)
-
--- FPS EN TIEMPO REAL (con icono fijo)
-local frameCount = 0
-local lastUpdate = tick()
-game:GetService("RunService").Heartbeat:Connect(function()
-    frameCount += 1
-    if tick() - lastUpdate >= 1 then
-        local fps = math.floor(frameCount)
-        local color = fps >= 60 and "00ff00" or fps >= 40 and "ffff00" or "ff0000"
-        FPSLabel:SetText("Zap FPS: <font color='#" .. color .. "'>" .. fps .. "</font>")
-        frameCount = 0
-        lastUpdate = tick()
-    end
-end)
-
-spawn(function()
-    while task.wait(1.5) do
-        local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
-        local color = ping <= 60 and "00ff00" or ping <= 120 and "ffff00" or "ff0000"
-        PingLabel:SetText("Wi-Fi Ping: <font color='#" .. color .. "'>" .. ping .. " ms</font>")
-    end
-end)
-
--- RAM USAGE (icono fijo)
-spawn(function()
-    while task.wait(2) do
-        local ram = math.floor(collectgarbage("count") / 1024)
-        RAMLabel:SetText("DataBase RAM: " .. ram .. " MB")
-    end
-end)
-
-GameLabel:SetText("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
-
-local startTime = tick()  -- Momento en que inyectaste el script
-
-coroutine.wrap(function()
-    while task.wait(1) do
-        local elapsed = tick() - startTime
-        local minutes = math.floor(elapsed / 60)
-        local seconds = math.floor(elapsed % 60)
-        
-        -- Solo los números en color según tiempo
-        if minutes >= 60 then
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#00ff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        elseif minutes >= 30 then
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ffff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        elseif minutes >= 10 then
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ff8800'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        else
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ff0000'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        end
-    end
-end)()
--- === 6. ACTUALIZAR JUGADORES EN SERVIDOR ===
-game.Players.PlayerAdded:Connect(function()
-    PlayersLabel:SetText("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
-end)
-game.Players.PlayerRemoving:Connect(function()
-    PlayersLabel:SetText("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
-end)
-
--- === 7. REGIÓN (MEJOR MÉTODO DISPONIBLE) ===
-spawn(function()
-    local region = "Unknown"
-    pcall(function()
-        region = game:GetService("LocalizationService"):GetCountryRegionForPlayerAsync(game.Players.LocalPlayer)
-    end)
-    RegionLabel:SetText("🌐 País/Región: " .. (region or "Unknown"))
-end)
-
-StatusLabel:SetText("Status: 🟢 ¡Loaded successfully!")
-
-local ExploitsBox = Tabs.Player:AddRightGroupbox("Exploits & Fun", "crown")
-
-local AutoFarmBox = Tabs["Auto Farm"]:AddLeftGroupbox("Auto Farm (¡Fix!)", "diamond")
 getgenv().AutoMarshEnabled = false
-getgenv().MarshInterval = 1.41 -- 1.39–1.45 anti-cheat safe
 
--- FUNCIÓN ENCENDER
+-- Wait time AFTER using E
+local ToolWaitTimes = {
+    ["Water"] = 20,
+    ["Sugar Block Bag"] = 0,
+    ["Gelatin"] = 45,
+    ["Empty Bag"] = 0
+}
+
+-- Essential tools for auto-stop
+local EssentialTools = {"Water", "Sugar Block Bag", "Gelatin"}
+
+local MainToggleRef
+
+local function CountMissingEssential()
+    local player = game.Players.LocalPlayer
+    local backpack = player.Backpack
+    local character = player.Character or {}
+    local missing = 0
+
+    for _, name in ipairs(EssentialTools) do
+        local found = false
+        for _, tool in backpack:GetChildren() do
+            if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(name)) then
+                found = true
+                break
+            end
+        end
+        if not found then
+            for _, tool in character:GetChildren() do
+                if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(name)) then
+                    found = true
+                    break
+                end
+            end
+        end
+        if not found then missing = missing + 1 end
+    end
+    return missing
+end
+
+local function EquipToolByName(toolName)
+    local player = game.Players.LocalPlayer
+    if not player.Character or not player.Character:FindFirstChild("Humanoid") then return false end
+
+    for _, tool in player.Backpack:GetChildren() do
+        if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(toolName)) then
+            player.Character.Humanoid:EquipTool(tool)
+            return true
+        end
+    end
+    return false
+end
+
+local function PressE()
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.06 + math.random(1,5)/100)
+    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
 local function StartAutoMarsh()
     if getgenv().AutoMarshEnabled then return end
     getgenv().AutoMarshEnabled = true
     Library:Notify("Auto Marshmallow → ON", 5)
 
     task.spawn(function()
-        local VIM = game:GetService("VirtualInputManager")
         local player = game.Players.LocalPlayer
-        local ToolPriority = {"Water", "Sugar Block Bag", "Gelatin", "Empty Bag"}
-        local index = 1
-
-        local function pressE()
-            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-            task.wait(0.06 + math.random(1, 5)/100)
-            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        end
+        local ToolOrder = {"Water", "Sugar Block Bag", "Gelatin", "Empty Bag"}
 
         while getgenv().AutoMarshEnabled do
-            if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-                player.CharacterAdded:Wait()
-                task.wait(3)
+            local missing = CountMissingEssential()
+            if missing >= 2 then
+                getgenv().AutoMarshEnabled = false
+                Library:Notify("🛑 Auto Farm OFF - Missing " .. missing .. "/3 essential tools", 6)
+                if MainToggleRef then MainToggleRef:SetValue(false) end
+                return
             end
 
-            local target = ToolPriority[index]
-            local tool = player.Backpack:FindFirstChildWhichIsA("Tool")
-            if tool and string.find(string.lower(tool.Name), string.lower(target)) then
-                player.Character.Humanoid:EquipTool(tool)
-            else
-                for _, t in player.Backpack:GetChildren() do
-                    if t:IsA("Tool") and string.find(string.lower(t.Name), string.lower(target)) then
-                        player.Character.Humanoid:EquipTool(t)
-                        break
+            for _, toolName in ipairs(ToolOrder) do
+                if not getgenv().AutoMarshEnabled then break end
+
+                if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.CharacterAdded:Wait()
+                    task.wait(3)
+                end
+
+                local equipped = EquipToolByName(toolName)
+
+                if equipped then
+                    task.wait(0.5)  -- Delay to register equip
+
+                    PressE()
+                    task.wait(0.1)
+
+                    -- Main wait
+                    local waitTime = ToolWaitTimes[toolName] or 0
+                    if waitTime > 0 then
+                        Library:Notify("⏳ Starting: " .. toolName .. " (" .. waitTime .. "s)", 2)
+                        for i = waitTime, 1, -1 do
+                            if not getgenv().AutoMarshEnabled then break end
+                            Library:Notify("⏳ " .. toolName .. ": " .. i .. "s remaining", 1)
+                            task.wait(1)
+                        end
+                        Library:Notify("✅ " .. toolName .. " completed", 2)
+                    end
+
+                    -- EXTRA WAIT ONLY FOR SUGAR BLOCK BAG (cooldown/change)
+                    if toolName == "Sugar Block Bag" then
+                        task.wait(0.5)  -- Additional wait after using Sugar
                     end
                 end
             end
-
-            index = index % #ToolPriority + 1
-            task.wait(getgenv().MarshInterval + math.random(-8, 12)/100)
-            pressE()
-            task.wait(0.07)
         end
     end)
 end
 
--- FUNCIÓN APAGAR
 local function StopAutoMarsh()
     if not getgenv().AutoMarshEnabled then return end
     getgenv().AutoMarshEnabled = false
-    if game.Players.LocalPlayer.Character then
-        pcall(function() game.Players.LocalPlayer.Character.Humanoid:UnequipTools() end)
-    end
     Library:Notify("Auto Marshmallow → OFF", 3)
 end
 
--- TOGGLE + KEYPICKER ENCADENADO (ESTE ES EL ÚNICO MÉTODO QUE FUNCIONA EN TU VERSIÓN)
-AutoFarmBox:AddToggle("AutoMarsh", {
-    Text = "Marshmallow",
+MainToggleRef = AutoFarmBox:AddToggle("AutoMarsh", {
+    Text = "Marshmallow Auto Farm",
     Default = false,
-    Tooltip = "Funciona al 100% ahora mismo - Probado hace 1 minuto",
+    Tooltip = "Perfect flow with custom waits",
     Callback = function(state)
         if state then
             StartAutoMarsh()
@@ -280,27 +181,74 @@ AutoFarmBox:AddToggle("AutoMarsh", {
         end
     end
 }):AddKeyPicker("AutoMarshKeybind", {
-    Default = "P",           -- Tecla por defecto
-    SyncToggleState = true,  -- En tu versión SÍ funciona bien si está encadenado
+    Default = "P",
+    SyncToggleState = true,
     Mode = "Toggle",
     Text = "Keybind (P)",
-    Tooltip = "Presiona P para activar/desactivar"
+    Tooltip = "Press P to toggle on/off"
 })
 
-local AlarmBox = Tabs["Auto Farm"]:AddRightGroupbox("Player Alarm", "music")
--- ============== PLAYER ALARM (AHORA SE DESACTIVA 100%) ==============
+AutoFarmBox:AddDivider()
+
+local AlarmBox = Tabs["Auto Farm"]:AddRightGroupbox("Player Alarm", "alarm-clock")
+
+AlarmBox:AddDivider()
+AlarmBox:AddLabel("<font color='rgb(230, 163, 33)'><b>Information</b></font>")
+AlarmBox:AddLabel("Player Alarm detects nearby players")
+AlarmBox:AddLabel("and plays a sound + optional notification.")
+AlarmBox:AddLabel("Useful for avoiding surprise attacks.")
+
+-- ============== IMPROVED PLAYER ALARM WITH CUSTOM SOUNDS & NOTIFICATIONS ==============
 getgenv().PlayerAlarm_Enabled = false
 getgenv().PlayerAlarm_Radius = 15
+getgenv().PlayerAlarm_SoundId = "rbxassetid://146404205"  -- Default sound (Basic Alarm)
+getgenv().PlayerAlarm_Notify = true  -- Notifications enabled by default
 getgenv().AlarmConnection = nil
-getgenv().AlarmSounds = {}
+getgenv().AlarmSounds = {}        -- [userId] = sound instance
+getgenv().AlarmNotified = {}      -- [userId] = true (anti-spam)
+
+-- 20 alarm sounds (10 original + 10 new)
+local AlarmSoundsList = {
+    {Name = "Basic Alarm (Default)", Id = "rbxassetid://146404205"},
+    {Name = "Fire Alarm", Id = "rbxassetid://497153454"},
+    {Name = "Loud Fire Alarm", Id = "rbxassetid://429406046"},
+    {Name = "Purge Siren", Id = "rbxassetid://7491350345"},
+    {Name = "Simple Beep Alarm", Id = "rbxassetid://9081144733"},
+    {Name = "Classic Siren", Id = "rbxassetid://200057767"},
+    {Name = "Emergency Siren", Id = "rbxassetid://7142904082"},
+    {Name = "Warning Beep", Id = "rbxassetid://147190665"},
+    {Name = "Alert Tone", Id = "rbxassetid://535870681"},
+    {Name = "Intruder Alert", Id = "rbxassetid://1846368080"},
+    
+    -- 10 NEW SOUNDS
+    {Name = "Police Siren", Id = "rbxassetid://276720840"},
+    {Name = "Air Raid Siren", Id = "rbxassetid://1835347026"},
+    {Name = "Red Alert (Star Trek)", Id = "rbxassetid://9119699174"},
+    {Name = "Nuclear Alarm", Id = "rbxassetid://1837838612"},
+    {Name = "High Pitch Alarm", Id = "rbxassetid://1837838739"},
+    {Name = "Factory Alarm", Id = "rbxassetid://1837841765"},
+    {Name = "Ship Horn Alarm", Id = "rbxassetid://9115982904"},
+    {Name = "Car Alarm", Id = "rbxassetid://276709942"},
+    {Name = "Sci-Fi Alarm", Id = "rbxassetid://9119699418"},
+    {Name = "Intense Beep Loop", Id = "rbxassetid://1839246711"}
+}
+
+-- Prepare dropdown values (only names)
+local soundNames = {}
+for _, sound in ipairs(AlarmSoundsList) do
+    table.insert(soundNames, sound.Name)
+end
+
+AlarmBox:AddDivider()
 
 AlarmBox:AddToggle("PlayerAlarm", {
     Text = "Player Alarm",
     Default = false,
+    Tooltip = "Enable/disable the proximity alarm system",
     Callback = function(state)
         getgenv().PlayerAlarm_Enabled = state
 
-        -- DESACTIVAR
+        -- DISABLE
         if not state then
             if getgenv().AlarmConnection then
                 getgenv().AlarmConnection:Disconnect()
@@ -313,40 +261,56 @@ AlarmBox:AddToggle("PlayerAlarm", {
                 end
             end
             getgenv().AlarmSounds = {}
+            getgenv().AlarmNotified = {}
             Library:Notify("Player Alarm OFF", 3)
             return
         end
 
-        -- ACTIVAR
+        -- ENABLE
         Library:Notify("Player Alarm ON", 3)
+
         getgenv().AlarmConnection = game:GetService("RunService").Heartbeat:Connect(function()
             if not getgenv().PlayerAlarm_Enabled then return end
-            if not game.Players.LocalPlayer.Character or not game.Players.LocalPlayer.Character:FindFirstChild("Head") then return end
 
-            local myHead = game.Players.LocalPlayer.Character.Head
+            local lp = game.Players.LocalPlayer
+            if not lp.Character or not lp.Character:FindFirstChild("Head") then return end
+
+            local myHead = lp.Character.Head
 
             for _, plr in pairs(game.Players:GetPlayers()) do
-                if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    local dist = (myHead.Position - plr.Character.HumanoidRootPart.Position).Magnitude
+                if plr ~= lp and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local root = plr.Character.HumanoidRootPart
+                    local dist = (myHead.Position - root.Position).Magnitude
                     local uid = plr.UserId
+                    local displayName = plr.DisplayName
 
                     if dist <= getgenv().PlayerAlarm_Radius then
+                        -- Play selected sound
                         if not getgenv().AlarmSounds[uid] then
-                            local head = plr.Character:FindFirstChild("Head") or plr.Character.HumanoidRootPart
+                            local head = plr.Character:FindFirstChild("Head") or root
                             local sound = Instance.new("Sound")
-                            sound.SoundId = "rbxassetid://7594301531"
+                            sound.SoundId = getgenv().PlayerAlarm_SoundId
                             sound.Volume = 2
                             sound.Looped = true
                             sound.Parent = head
                             sound:Play()
                             getgenv().AlarmSounds[uid] = sound
                         end
+
+                        -- Notification (if enabled and first detection)
+                        if getgenv().PlayerAlarm_Notify and not getgenv().AlarmNotified[uid] then
+                            getgenv().AlarmNotified[uid] = true
+                            local meters = math.floor(dist)
+                            Library:Notify(string.format("⚠️ %s is approaching (%d studs)", displayName, meters), 4)
+                        end
                     else
+                        -- Player left radius
                         if getgenv().AlarmSounds[uid] then
                             getgenv().AlarmSounds[uid]:Stop()
                             getgenv().AlarmSounds[uid]:Destroy()
                             getgenv().AlarmSounds[uid] = nil
                         end
+                        getgenv().AlarmNotified[uid] = nil
                     end
                 end
             end
@@ -362,10 +326,39 @@ AlarmBox:AddSlider("AlarmRadius", {
     Rounding = 1,
     Callback = function(v)
         getgenv().PlayerAlarm_Radius = v
+        Library:Notify("Alarm Radius: " .. v .. " studs", 2)
     end
 })
 
-local CharacterBox = Tabs.Player:AddLeftGroupbox("Character", "camera")
+AlarmBox:AddDivider()
+
+AlarmBox:AddToggle("AlarmNotify", {
+    Text = "Enable Notifications",
+    Default = false,
+    Tooltip = "Show a notification when a player enters the radius",
+    Callback = function(state)
+        getgenv().PlayerAlarm_Notify = state
+        Library:Notify(state and "Alarm Notifications Enabled" or "Alarm Notifications Disabled", 3)
+    end
+})
+
+AlarmBox:AddDropdown("AlarmSoundSelect", {
+    Text = "Select Alarm Sound",
+    Values = soundNames,
+    Default = 1,  -- Points to "Basic Alarm (Default)"
+    Tooltip = "Choose the sound played when a player is near",
+    Callback = function(selected)
+        for _, sound in ipairs(AlarmSoundsList) do
+            if sound.Name == selected then
+                getgenv().PlayerAlarm_SoundId = sound.Id
+                Library:Notify("Alarm Sound Changed: " .. selected, 3)
+                break
+            end
+        end
+    end
+})
+
+local CharacterBox = Tabs.Player:AddLeftGroupbox("Utilities", "hammer")
 
 -- INFINITE YIELD ADMIN COMMANDS
 CharacterBox:AddButton("Infinite Yield", function()
@@ -664,7 +657,6 @@ ESPV2Box:AddSlider("ESPToolsSize", {
 })
 
 local ESPNameBox = Tabs.Visuals:AddLeftGroupbox("ESP Name", "type")
-local ESPV1Box = Tabs.Visuals:AddLeftGroupbox("ESP Tracer", "target")
 
 -- ==================== ESP BOX (CUADRADO 2D - SIN TRACER) ====================
 local ESP_Box_Enabled = false
@@ -1023,29 +1015,31 @@ ESPNameBox:AddButton("Clear Friends List", function()
     playerDropdown:SetValue("----")
 end)
 
+local ESPV1Box = Tabs.Visuals:AddLeftGroupbox("ESP Tracer", "target")
+
 -- === TRACER ESP PRO - IMPROVED & FIXED ===
 local Tracer = {
     Enabled = false,
     Color = Color3.fromRGB(255, 255, 255),
     Thickness = 2,
-    From = "Bottom",          -- "Bottom", "Middle", "Top"
-    Part = "Head",            -- Target body part
-    TeamCheck = false,        -- If true → hides tracers on teammates
-    AliveCheck = true,        -- Always active (hides if dead)
-    MaxDistance = 0,          -- 0 = unlimited
+    From = "Bottom",
+    Part = "Head",
+    TeamCheck = false,
+    AliveCheck = true,
+    MaxDistance = 0,
     CircleEnabled = true,
     CircleRadius = 8,
     CircleThickness = 2,
-    CircleFilled = false
+    CircleFilled = false,
+    AnimationSpeed = 0.3
 }
 
-local TracerLines = {}   -- [player] = { line = Drawing.Line, circle = Drawing.Circle }
+local TracerLines = {} -- [player] = { line, circle, currentTrans = 0, targetTrans = 0 }
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Create line + circle for a player
 local function CreateTracer(plr)
     if plr == LocalPlayer or TracerLines[plr] then return end
 
@@ -1053,7 +1047,7 @@ local function CreateTracer(plr)
     line.Visible = false
     line.Color = Tracer.Color
     line.Thickness = Tracer.Thickness
-    line.Transparency = 1
+    line.Transparency = 0  -- Inicia invisible
 
     local circle = Drawing.new("Circle")
     circle.Visible = false
@@ -1062,12 +1056,16 @@ local function CreateTracer(plr)
     circle.Radius = Tracer.CircleRadius
     circle.Filled = Tracer.CircleFilled
     circle.NumSides = 20
-    circle.Transparency = 1
+    circle.Transparency = 0
 
-    TracerLines[plr] = { line = line, circle = circle }
+    TracerLines[plr] = {
+        line = line,
+        circle = circle,
+        currentTrans = 0,
+        targetTrans = 0
+    }
 end
 
--- Clean up when player leaves
 Players.PlayerRemoving:Connect(function(plr)
     if TracerLines[plr] then
         TracerLines[plr].line:Remove()
@@ -1076,24 +1074,26 @@ Players.PlayerRemoving:Connect(function(plr)
     end
 end)
 
--- Create for existing and new players
 for _, plr in Players:GetPlayers() do
     if plr ~= LocalPlayer then CreateTracer(plr) end
 end
+
 Players.PlayerAdded:Connect(function(plr)
     if plr ~= LocalPlayer then CreateTracer(plr) end
 end)
 
--- Main loop (RenderStepped for smoothness)
-RunService.RenderStepped:Connect(function()
-    if not Tracer.Enabled then
-        for _, data in pairs(TracerLines) do
-            data.line.Visible = false
-            data.circle.Visible = false
-        end
-        return
-    end
+-- Forzar todo invisible al inicio (solución definitiva contra líneas visibles al cargar)
+for _, data in pairs(TracerLines) do
+    data.line.Visible = false
+    data.circle.Visible = false
+    data.line.Transparency = 0
+    data.circle.Transparency = 0
+    data.currentTrans = 0
+    data.targetTrans = 0
+end
 
+-- Bucle principal
+RunService.RenderStepped:Connect(function()
     local viewportSize = Camera.ViewportSize
     local screenCenterX = viewportSize.X / 2
     local fromY = Tracer.From == "Bottom" and viewportSize.Y
@@ -1101,81 +1101,65 @@ RunService.RenderStepped:Connect(function()
                or 0
 
     for plr, data in pairs(TracerLines) do
-        local char = plr.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then
-            data.line.Visible = false
-            data.circle.Visible = false
-            continue
-        end
+        local line = data.line
+        local circle = data.circle
 
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if Tracer.AliveCheck and (not humanoid or humanoid.Health <= 0) then
-            data.line.Visible = false
-            data.circle.Visible = false
-            continue
-        end
+        -- Siempre forzar desaparición si está desactivado
+        data.targetTrans = 0
 
-        -- Team Check: hide tracers on teammates
-        if Tracer.TeamCheck and plr.Team == LocalPlayer.Team then
-            data.line.Visible = false
-            data.circle.Visible = false
-            continue
-        end
+        if Tracer.Enabled then
+            local char = plr.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if not (Tracer.AliveCheck and (not humanoid or humanoid.Health <= 0))
+                    and not (Tracer.TeamCheck and plr.Team == LocalPlayer.Team) then
 
-        -- Get target part
-        local targetPart = char:FindFirstChild(Tracer.Part)
-        if not targetPart then
-            targetPart = char:FindFirstChild("Head") -- Fallback to Head
-            if not targetPart then
-                data.line.Visible = false
-                data.circle.Visible = false
-                continue
-            end
-        end
+                    local targetPart = char:FindFirstChild(Tracer.Part) or char:FindFirstChild("Head")
+                    if targetPart then
+                        local distOk = true
+                        if Tracer.MaxDistance > 0 then
+                            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if myRoot then
+                                distOk = (myRoot.Position - targetPart.Position).Magnitude <= Tracer.MaxDistance
+                            end
+                        end
 
-        -- Max distance check
-        if Tracer.MaxDistance > 0 then
-            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                local dist = (myRoot.Position - targetPart.Position).Magnitude
-                if dist > Tracer.MaxDistance then
-                    data.line.Visible = false
-                    data.circle.Visible = false
-                    continue
+                        if distOk then
+                            local targetPos = targetPart.Position
+                            local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+                            if onScreen and screenPos.Z > 0 then
+                                data.targetTrans = 1
+
+                                line.From = Vector2.new(screenCenterX, fromY)
+                                line.To = Vector2.new(screenPos.X, screenPos.Y)
+                                line.Color = Tracer.Color
+                                line.Thickness = Tracer.Thickness
+
+                                if Tracer.CircleEnabled then
+                                    circle.Position = Vector2.new(screenPos.X, screenPos.Y)
+                                    circle.Radius = Tracer.CircleRadius
+                                    circle.Thickness = Tracer.CircleThickness
+                                    circle.Color = Tracer.Color
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
 
-        -- Exact position of the part center
-        local targetPos = targetPart.Position
-        local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+        -- Animación suave
+        data.currentTrans = data.currentTrans + (data.targetTrans - data.currentTrans) * Tracer.AnimationSpeed
 
-        if onScreen and screenPos.Z > 0 then
-            -- Line
-            data.line.From = Vector2.new(screenCenterX, fromY)
-            data.line.To = Vector2.new(screenPos.X, screenPos.Y)
-            data.line.Color = Tracer.Color
-            data.line.Thickness = Tracer.Thickness
-            data.line.Visible = true
+        line.Transparency = math.clamp(data.currentTrans, 0, 1)
+        circle.Transparency = math.clamp(data.currentTrans, 0, 1)
 
-            -- Circle at target
-            if Tracer.CircleEnabled then
-                data.circle.Position = Vector2.new(screenPos.X, screenPos.Y)
-                data.circle.Radius = Tracer.CircleRadius
-                data.circle.Thickness = Tracer.CircleThickness
-                data.circle.Color = Tracer.Color
-                data.circle.Visible = true
-            else
-                data.circle.Visible = false
-            end
-        else
-            data.line.Visible = false
-            data.circle.Visible = false
-        end
+        line.Visible = data.currentTrans > 0.01
+        circle.Visible = Tracer.CircleEnabled and data.currentTrans > 0.01
     end
 end)
 
--- === UI (Add this in your ESPV1Box) ===
+-- === UI ===
 ESPV1Box:AddToggle("TracerESP", {
     Text = "ESP Tracer",
     Default = false,
@@ -1192,13 +1176,13 @@ ESPV1Box:AddToggle("TracerESP", {
     end
 })
 
+-- (El resto de la UI queda exactamente igual que antes)
 ESPV1Box:AddDropdown("TracerPart", {
     Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
     Default = 1,
     Text = "Target Part",
     Callback = function(value)
         Tracer.Part = value
-        Library:Notify("Target Part: " .. value, 2)
     end
 })
 
@@ -1255,7 +1239,6 @@ ESPV1Box:AddSlider("TracerCircleThick", {
 ESPV1Box:AddToggle("TracerTeamCheck", {
     Text = "Team Check",
     Default = false,
-    Tooltip = "Does not show tracers on your team members",
     Callback = function(state)
         Tracer.TeamCheck = state
     end
@@ -1272,6 +1255,8 @@ ESPV1Box:AddSlider("TracerMaxDist", {
     end
 })
 
+local ESPV3Box = Tabs.Visuals:AddRightGroupbox("ESP Skeleton", "git-branch")
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
@@ -1280,24 +1265,27 @@ local LocalPlayer = Players.LocalPlayer
 local Skeleton_Enabled = false
 local Skeleton_Color = Color3.fromRGB(255, 255, 255)
 local Skeleton_Thickness = 2
-local Skeleton_Lines = {}  -- [plr] = {line1, line2, ...}
+local Skeleton_AnimationSpeed = 0.3  -- Smooth fade speed
 
--- Mapeo de huesos (R6 + R15)
+local Skeleton_Lines = {} -- [player] = { lines = {}, used = 0, currentTrans = 0, targetTrans = 0 }
+
+-- Bone mapping compatible with both R6 and R15
 local Bones = {
-    {"Head", {"UpperTorso", "Torso"}},
-    {"UpperTorso", {"LowerTorso", "Torso"}},
-    {"UpperTorso", {"LeftUpperArm", "Left Arm"}},
-    {"LeftUpperArm", {"LeftLowerArm", "Left Arm"}},
-    {"LeftLowerArm", {"LeftHand", "Left Arm"}},
-    {"UpperTorso", {"RightUpperArm", "Right Arm"}},
-    {"RightUpperArm", {"RightLowerArm", "Right Arm"}},
-    {"RightLowerArm", {"RightHand", "Right Arm"}},
-    {"LowerTorso", {"LeftUpperLeg", "Left Leg"}},
-    {"LeftUpperLeg", {"LeftLowerLeg", "Left Leg"}},
-    {"LeftLowerLeg", {"LeftFoot", "Left Leg"}},
-    {"LowerTorso", {"RightUpperLeg", "Right Leg"}},
-    {"RightUpperLeg", {"RightLowerLeg", "Right Leg"}},
-    {"RightLowerLeg", {"RightFoot", "Right Leg"}}
+    {"Head", {"Head"}},                                   -- Head
+    {"Head", {"UpperTorso", "Torso"}},                    -- Neck
+    {"UpperTorso", {"LowerTorso", "Torso"}},              -- Spine
+    {"UpperTorso", {"LeftUpperArm", "Left Arm"}},         -- Left Shoulder
+    {"LeftUpperArm", {"LeftLowerArm", "Left Arm"}},       -- Left Elbow
+    {"LeftLowerArm", {"LeftHand", "Left Arm"}},           -- Left Wrist
+    {"UpperTorso", {"RightUpperArm", "Right Arm"}},       -- Right Shoulder
+    {"RightUpperArm", {"RightLowerArm", "Right Arm"}},    -- Right Elbow
+    {"RightLowerArm", {"RightHand", "Right Arm"}},        -- Right Wrist
+    {"LowerTorso", {"LeftUpperLeg", "Left Leg"}},         -- Left Hip
+    {"LeftUpperLeg", {"LeftLowerLeg", "Left Leg"}},       -- Left Knee
+    {"LeftLowerLeg", {"LeftFoot", "Left Leg"}},           -- Left Ankle
+    {"LowerTorso", {"RightUpperLeg", "Right Leg"}},       -- Right Hip
+    {"RightUpperLeg", {"RightLowerLeg", "Right Leg"}},    -- Right Knee
+    {"RightLowerLeg", {"RightFoot", "Right Leg"}}         -- Right Ankle
 }
 
 local function GetPart(char, names)
@@ -1305,25 +1293,32 @@ local function GetPart(char, names)
         local part = char:FindFirstChild(name)
         if part then return part end
     end
+    return nil
 end
 
--- Crear líneas una sola vez
+-- Create reusable lines per player
 local function CreateSkeleton(plr)
     if plr == LocalPlayer or Skeleton_Lines[plr] then return end
 
     local lines = {}
-    for i = 1, 14 do
+    for i = 1, #Bones do
         local line = Drawing.new("Line")
         line.Visible = false
         line.Color = Skeleton_Color
         line.Thickness = Skeleton_Thickness
-        line.Transparency = 1
+        line.Transparency = 0
         table.insert(lines, line)
     end
-    Skeleton_Lines[plr] = {lines = lines, used = 0}
+
+    Skeleton_Lines[plr] = {
+        lines = lines,
+        used = 0,
+        currentTrans = 0,
+        targetTrans = 0
+    }
 end
 
--- Limpiar al salir
+-- Cleanup when player leaves
 Players.PlayerRemoving:Connect(function(plr)
     if Skeleton_Lines[plr] then
         for _, line in pairs(Skeleton_Lines[plr].lines) do
@@ -1333,85 +1328,112 @@ Players.PlayerRemoving:Connect(function(plr)
     end
 end)
 
--- Crear para todos
-for _, plr in Players:GetPlayers() do if plr ~= LocalPlayer then CreateSkeleton(plr) end end
-Players.PlayerAdded:Connect(function(plr) if plr ~= LocalPlayer then CreateSkeleton(plr) end end)
+-- Create for current and future players
+for _, plr in Players:GetPlayers() do
+    if plr ~= LocalPlayer then CreateSkeleton(plr) end
+end
 
--- LOOP FINAL - NUNCA SE QUEDA PEGADO
-RunService.Heartbeat:Connect(function()
-    if not Skeleton_Enabled then
-        for _, data in pairs(Skeleton_Lines) do
-            for _, line in pairs(data.lines) do
-                line.Visible = false
-            end
-            data.used = 0
-        end
-        return
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then CreateSkeleton(plr) end
+end)
+
+-- Force everything invisible on script load
+for _, data in pairs(Skeleton_Lines) do
+    for _, line in pairs(data.lines) do
+        line.Visible = false
+        line.Transparency = 0
     end
+    data.currentTrans = 0
+    data.targetTrans = 0
+    data.used = 0
+end
 
-    -- Resetear TODAS las líneas cada frame
-    for _, data in pairs(Skeleton_Lines) do
+-- Main loop: optimized, safe and smooth (no nil errors)
+RunService.Heartbeat:Connect(function()
+    for plr, data in pairs(Skeleton_Lines) do
+        -- Safety check: skip if player or character is missing
+        if not plr or not plr.Parent or not plr.Character then
+            data.targetTrans = 0
+        else
+            local char = plr.Character
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+            if not Skeleton_Enabled 
+                or not char:FindFirstChild("HumanoidRootPart") 
+                or not char:FindFirstChild("Head")
+                or (humanoid and humanoid.Health <= 0) then
+                data.targetTrans = 0
+            else
+                data.targetTrans = 1
+            end
+        end
+
+        -- Smooth fade animation
+        data.currentTrans = data.currentTrans + (data.targetTrans - data.currentTrans) * Skeleton_AnimationSpeed
+        local trans = math.clamp(data.currentTrans, 0, 1)
+
+        -- Reset previously used lines
         for i = 1, data.used do
             data.lines[i].Visible = false
         end
         data.used = 0
-    end
 
-    for plr, data in pairs(Skeleton_Lines) do
-        local char = plr.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Head") then
-            continue
-        end
-
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum and hum.Health <= 0 then continue end
-
-        for _, bone in ipairs(Bones) do
-            local part1 = GetPart(char, {bone[1]})
-            local part2 = GetPart(char, bone[2])
-
-            if part1 and part2 then
-                local screen1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
-                local screen2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
-
-                -- Solo dibujar si al menos una parte está en pantalla
-                if onScreen1 or onScreen2 then
-                    data.used = data.used + 1
-                    if data.used > #data.lines then break end
-
-                    local line = data.lines[data.used]
-                    line.From = Vector2.new(screen1.X, screen1.Y)
-                    line.To = Vector2.new(screen2.X, screen2.Y)
-                    line.Color = Skeleton_Color
-                    line.Thickness = Skeleton_Thickness
-                    line.Visible = true
+        -- Only draw if visible enough and ESP is enabled
+        if trans > 0.01 and data.targetTrans > 0.5 and plr.Character then
+            local char = plr.Character
+            for i, bone in ipairs(Bones) do
+                local part1 = GetPart(char, {bone[1]})
+                local part2 = GetPart(char, bone[2])
+                if part1 and part2 then
+                    local screen1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
+                    local screen2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
+                    if onScreen1 or onScreen2 then
+                        data.used = data.used + 1
+                        if data.used > #data.lines then break end
+                        local line = data.lines[data.used]
+                        line.From = Vector2.new(screen1.X, screen1.Y)
+                        line.To = Vector2.new(screen2.X, screen2.Y)
+                        line.Color = Skeleton_Color
+                        line.Thickness = Skeleton_Thickness
+                        line.Transparency = trans
+                        line.Visible = true
+                    end
                 end
             end
+        end
+
+        -- Apply transparency to all lines (including unused ones)
+        for _, line in pairs(data.lines) do
+            line.Transparency = trans
         end
     end
 end)
 
--- ==================== UI - LIMPIO Y FUNCIONAL ====================
-ESPV2Box:AddToggle("SkeletonESP", {
+-- ==================== UI ====================
+ESPV3Box:AddToggle("SkeletonESP", {
     Text = "ESP Skeleton",
     Default = false,
     Callback = function(v)
         Skeleton_Enabled = v
-        Library:Notify(v and "Skeleton ESP Activado" or "Skeleton ESP Desactivado", 3)
+        Library:Notify(v and "Skeleton ESP Enabled" or "Skeleton ESP Disabled", 3)
     end
 }):AddColorPicker("SkeletonColor", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "Skeleton Color",
-    Callback = function(c) Skeleton_Color = c end
+    Callback = function(c)
+        Skeleton_Color = c
+    end
 })
 
-ESPV2Box:AddSlider("SkeletonThickness", {
+ESPV3Box:AddSlider("SkeletonThickness", {
     Text = "Thickness",
     Min = 0,
     Max = 5,
-    Default = 1,
+    Default = 0,
     Rounding = 1,
-    Callback = function(v) Skeleton_Thickness = v end
+    Callback = function(v)
+        Skeleton_Thickness = v
+    end
 })
 
 local Players = game:GetService("Players")
@@ -1955,13 +1977,14 @@ FOVBox:AddLabel("FOV Color"):AddColorPicker("FOVColor", {
 
 getgenv().Hardlock = {
     Enabled = false,
-    Aiming = false,
-    Key = "z",
+    Key = "Z",
     Part = "Head",
-    FOV = 100,
+    FOV = 150,
     Predict = true,
-    Airshot = true,
-    TeamCheck = false
+    Airshot = false,
+    TeamCheck = false,
+    Strength = 160,
+    AliveCheck = false
 }
 
 local Players = game:GetService("Players")
@@ -1970,12 +1993,12 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-
 local Target = nil
 local LockConnection = nil
 local MouseLocked = false
+local LockStartTime = 0
+local RampFrames = 15
 
--- FOV Circle para Hardlock
 local HardlockFOVCircle = Drawing.new("Circle")
 HardlockFOVCircle.Visible = false
 HardlockFOVCircle.Thickness = 2
@@ -1989,22 +2012,41 @@ RunService.RenderStepped:Connect(function()
     HardlockFOVCircle.Radius = getgenv().Hardlock.FOV
 end)
 
+local function GetBestPart(char, desiredPart)
+    if desiredPart == "Head" then
+        local head = char:FindFirstChild("Head")
+        if head then return head end
+    end
+    local part = char:FindFirstChild(desiredPart)
+    if part then return part end
+    local head = char:FindFirstChild("Head")
+    if head then return head end
+    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+end
+
+local function GetAirshotPart(char)
+    local lowerTorso = char:FindFirstChild("LowerTorso")
+    if lowerTorso then return lowerTorso end
+    local upperTorso = char:FindFirstChild("UpperTorso")
+    if upperTorso then return upperTorso end
+    local torso = char:FindFirstChild("Torso")
+    if torso then return torso end
+    return char:FindFirstChild("HumanoidRootPart")
+end
+
 local function GetClosestPlayer()
     local closest = nil
     local shortestDistance = getgenv().Hardlock.FOV
-
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr == LocalPlayer then continue end
         if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then continue end
-        if not plr.Character:FindFirstChild("Humanoid") or plr.Character.Humanoid.Health <= 0 then continue end
+        local humanoid = plr.Character:FindFirstChild("Humanoid")
+        if getgenv().Hardlock.AliveCheck and (not humanoid or humanoid.Health <= 0) then continue end
         if getgenv().Hardlock.TeamCheck and plr.Team == LocalPlayer.Team then continue end
-        
-        local part = plr.Character:FindFirstChild(getgenv().Hardlock.Part) or plr.Character.Head
+        local part = GetBestPart(plr.Character, getgenv().Hardlock.Part)
         if not part then continue end
-        
         local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
         if not onScreen then continue end
-        
         local distance = (Vector2.new(Mouse.X, Mouse.Y + 36) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
         if distance < shortestDistance then
             shortestDistance = distance
@@ -2015,52 +2057,65 @@ local function GetClosestPlayer()
 end
 
 local function HardlockLoop()
-    if not MouseLocked or not Target or not Target.Character then return end
-   
-    local char = Target.Character
-    local humanoid = char:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then
-        MouseLocked = false
+    if not MouseLocked or not Target or not Target.Character then
+        StopLock()
         return
     end
-    
-    local part = char:FindFirstChild(getgenv().Hardlock.Part) or char.Head
-    if not part then return end
-    
-    -- Airshot
-    if getgenv().Hardlock.Airshot and humanoid.FloorMaterial == Enum.Material.Air then
-        part = char:FindFirstChild("LowerTorso") or char:FindFirstChild("UpperTorso") or part
+    if getgenv().Hardlock.AliveCheck then
+        local humanoid = Target.Character:FindFirstChild("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then
+            StopLock()
+            return
+        end
     end
-    
+    local part = GetBestPart(Target.Character, getgenv().Hardlock.Part)
+    if not part then
+        StopLock()
+        return
+    end
+    local humanoid = Target.Character:FindFirstChild("Humanoid")
+    if getgenv().Hardlock.Airshot and humanoid and humanoid.FloorMaterial == Enum.Material.Air then
+        part = GetAirshotPart(Target.Character)
+    end
     local velocity = part.AssemblyLinearVelocity
-    local prediction = getgenv().Hardlock.Predict and (velocity * 0.135) or Vector3.new(0, 0, 0)
-    local targetPos = part.Position + prediction + Vector3.new(0, 0.12, 0)
-    
+    local prediction = getgenv().Hardlock.Predict and (velocity * 0.142) or Vector3.new(0, 0, 0)
+    local targetPos = part.Position + prediction + Vector3.new(0, 0.1, 0)
     local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPos)
     if not onScreen then return end
-    
     local target2D = Vector2.new(screenPoint.X, screenPoint.Y)
     local mouse2D = Vector2.new(Mouse.X, Mouse.Y + 36)
     local difference = target2D - mouse2D
     local distance = difference.Magnitude
-    
-    -- DEADZONE + SMOOTH CONTROLADO (LA CLAVE DEL SOLDADO)
-    if distance < 6 then return end
-    
-    local moveX = difference.X * 0.22
-    local moveY = difference.Y * 0.16
-    
-    moveX = math.clamp(moveX, -11, 11)
-    moveY = math.clamp(moveY, -10, 10)
-    
-    -- APLICACIÓN EN PASOS PEQUEÑOS (SOLDADO ESTABLE)
+    local baseDeadzone = math.clamp(distance / 28, 3, 8)
+    local rampProgress = math.clamp((tick() - LockStartTime) * 60 / RampFrames, 0, 1)
+    local dynamicDeadzone = baseDeadzone + (4 * (1 - rampProgress))
+    if distance < dynamicDeadzone then return end
+    local baseStrength = getgenv().Hardlock.Strength / 100
+    local rampMultiplier = rampProgress ^ 1.5
+    local strength = baseStrength * rampMultiplier
+    if rampProgress >= 1 then strength = baseStrength end
+    local smoothFactor = math.clamp(0.15 + (300 / (distance + 70)), 0.12, 0.45)
+    local distFactor = math.clamp(1.0 + (distance / 400), 1.0, 2.4)
+    local verticalComp = math.clamp(1.0 + (distance / 320) + (screenPoint.Z / 270), 1.0, 2.7)
+    local upwardBias = 0
+    if distance > 90 then upwardBias = math.clamp((distance - 80) / 12, 0, 9) end
+    if screenPoint.Z > 140 then upwardBias = upwardBias + 3.5 end
+    local moveX = difference.X * smoothFactor * strength * distFactor
+    local moveY = (difference.Y * smoothFactor * verticalComp * strength * distFactor) - upwardBias
+    local maxMove = math.clamp(25 + (distance / 18) + (baseStrength * 2.5), 22, 50)
+    if rampProgress < 0.5 then maxMove = maxMove * 0.65 end
+    moveX = math.clamp(moveX, -maxMove, maxMove)
+    moveY = math.clamp(moveY, -maxMove * 0.95, maxMove * 0.95)
     mousemoverel(moveX, moveY)
-    mousemoverel(moveX * 0.8, moveY * 0.7)
-    mousemoverel(moveX * 0.5, moveY * 0.4)
-    
-    -- KILL DRIFT HORIZONTAL
+    mousemoverel(moveX * 0.85, moveY * 0.80)
+    mousemoverel(moveX * 0.60, moveY * 0.55)
+    mousemoverel(moveX * 0.30, moveY * 0.25)
     if math.abs(difference.X) > 10 then
-        mousemoverel(math.clamp(difference.X * 0.65, -15, 15), 0)
+        mousemoverel(math.clamp(difference.X * 0.65 * distFactor, -28, 28), 0)
+    end
+    if math.abs(difference.Y) > 8 or distance > 100 then
+        local vertCorrection = math.clamp(difference.Y * 0.65 * verticalComp - upwardBias, -32, 32)
+        mousemoverel(0, vertCorrection)
     end
 end
 
@@ -2068,6 +2123,7 @@ local function StartLock()
     Target = GetClosestPlayer()
     if not Target then return end
     MouseLocked = true
+    LockStartTime = tick()
     if LockConnection then LockConnection:Disconnect() end
     LockConnection = RunService.RenderStepped:Connect(HardlockLoop)
 end
@@ -2081,14 +2137,11 @@ local function StopLock()
     Target = nil
 end
 
--- Key Input (convierte string a KeyCode)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    local keyName = getgenv().Hardlock.Key:upper()
-    local keyCode = Enum.KeyCode[keyName]
-    
-    if keyCode and input.KeyCode == keyCode and getgenv().Hardlock.Enabled then
+UserInputService.InputBegan:Connect(function(input)
+    if not getgenv().Hardlock.Enabled then return end
+    local keyStr = getgenv().Hardlock.Key:upper()
+    local keyCode = Enum.KeyCode[keyStr]
+    if keyCode and input.KeyCode == keyCode then
         if MouseLocked then
             StopLock()
         else
@@ -2097,127 +2150,123 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-local HardlockBox = Tabs.Combat:AddRightGroupbox("Hardlock (No Work)", "mouse")
+local HardlockBox = Tabs.Combat:AddRightGroupbox("Hardlock", "mouse")
 
--- Toggle principal + KeyPicker encadenado
 HardlockBox:AddToggle("HardlockEnabled", {
-    Text = "MauseLock",
+    Text = "MouseLock",
     Default = false,
-    Tooltip = "Mouse lock SOLDADO (no se mueve 1 pixel)",
+    Tooltip = "Must be ON to use the keybind",
     Callback = function(state)
         getgenv().Hardlock.Enabled = state
-        if not state then
-            StopLock()
-        end
+        if not state then StopLock() end
     end
 }):AddKeyPicker("HardlockKeybind", {
     Default = "Z",
-    SyncToggleState = true,
+    SyncToggleState = false,
     Mode = "Toggle",
     Text = "Hardlock Key",
-    Tooltip = "Tecla para hardlock",
     Callback = function(Value)
-        -- Toggle funciona automáticamente con SyncToggleState
+        getgenv().Hardlock.Key = Value.Name
     end
 })
 
 HardlockBox:AddDropdown("HardlockPart", {
-    Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
-    Default = 1,  -- Head
+    Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso", "Torso"},
+    Default = 1,
     Text = "Target Part",
-    Tooltip = "Parte del cuerpo",
-    Callback = function(part)
-        getgenv().Hardlock.Part = part
-    end
+    Callback = function(v) getgenv().Hardlock.Part = v end
 })
 
-HardlockBox:AddToggle("HardlockPredict", {
-    Text = "Prediction",
-    Default = false,
-    Tooltip = "Predicción de movimiento",
-    Callback = function(state)
-        getgenv().Hardlock.Predict = state
-    end
-})
-
-HardlockBox:AddToggle("HardlockAirshot", {
-    Text = "Airshot Function",
-    Default = false,
-    Tooltip = "Aim torso si salta",
-    Callback = function(state)
-        getgenv().Hardlock.Airshot = state
-    end
-})
-
-HardlockBox:AddToggle("HardlockTeamCheck", {
-    Text = "Team Check",
-    Default = false,
-    Tooltip = "No lock teammates",
-    Callback = function(state)
-        getgenv().Hardlock.TeamCheck = state
-    end
-})
-
-HardlockBox:AddSlider("HardlockFOV", {
-    Text = "FOV Size",
-    Default = 0,
+HardlockBox:AddToggle("HardlockPredict", {Text = "Prediction", Default = true, Callback = function(v) getgenv().Hardlock.Predict = v end})
+HardlockBox:AddToggle("HardlockAirshot", {Text = "Airshot Function", Default = false, Callback = function(v) getgenv().Hardlock.Airshot = v end})
+HardlockBox:AddToggle("HardlockAliveCheck", {Text = "Alive Check", Default = false, Callback = function(v) getgenv().Hardlock.AliveCheck = v end})
+HardlockBox:AddToggle("HardlockTeamCheck", {Text = "Team Check", Default = false, Callback = function(v) getgenv().Hardlock.TeamCheck = v end})
+HardlockBox:AddSlider("HardlockFOV", {Text = "FOV Size", Default = 150, Min = 0, Max = 600, Rounding = 1, Callback = function(v) getgenv().Hardlock.FOV = v end})
+HardlockBox:AddSlider("HardlockStrength", {
+    Text = "Lock Strength",
+    Default = 160,
     Min = 0,
-    Max = 100,
+    Max = 350,
     Rounding = 1,
-    Callback = function(value)
-        getgenv().Hardlock.FOV = value
-    end
+    Callback = function(v) getgenv().Hardlock.Strength = v end
 })
 
 HardlockBox:AddDivider()
 
-HardlockBox:AddToggle("HardlockShowFOV", {
-    Text = "Show FOV Circle",
-    Default = false,
-    Tooltip = "Muestra círculo FOV",
-    Callback = function(state)
-        HardlockFOVCircle.Visible = state
-    end
-})
-
-HardlockBox:AddLabel("FOV Color"):AddColorPicker("HardlockFOVColor", {
-    Default = Color3.fromRGB(255, 0, 50),
-    Title = "Hardlock FOV Color",
-    Callback = function(color)
-        HardlockFOVCircle.Color = color
-    end
-})
+HardlockBox:AddToggle("HardlockShowFOV", {Text = "Show FOV Circle", Default = false, Callback = function(v) HardlockFOVCircle.Visible = v end})
+HardlockBox:AddToggle("HardlockFOVFilled", {Text = "FOV Filled", Default = false, Callback = function(v) HardlockFOVCircle.Filled = v end})
+HardlockBox:AddSlider("HardlockFOVTransparency", {Text = "FOV Transparency", Default = 20, Min = 0, Max = 100, Rounding = 1, Callback = function(v) HardlockFOVCircle.Transparency = 1 - (v / 100) end})
+HardlockBox:AddLabel("FOV Border Color"):AddColorPicker("HardlockFOVColor", {Default = Color3.fromRGB(255, 0, 50), Callback = function(c) HardlockFOVCircle.Color = c end})
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Variables originales (100% igual que tu script)
+-- Variables principales
 local hitboxEnabled = false
 local hitboxSize = 5
 local selectedPart = "Head"
 local connection = nil
 local originalData = {}
+local highlights = {}
+local friendsTeam = {}  -- Lista de amigos (por Name o DisplayName)
+
+-- Toggles
+local aliveCheckEnabled = true
+local highlightOnlyHead = false
+
+-- Highlight settings
+local highlightSettings = {
+    FillColor = Color3.fromRGB(255, 170, 100),
+    OutlineColor = Color3.fromRGB(255, 120, 0),
+    FillTransparency = 0.5
+}
 
 local availableParts = {"Head", "UpperTorso", "RightUpperLeg", "LeftUpperLeg", "RightFoot", "LeftFoot"}
 
+local function isPlayerAlive(plr)
+    if not plr.Character then return false end
+    local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
+    return humanoid and humanoid.Health > 0
+end
+
+local function isFriend(plr)
+    if not plr then return false end
+    return table.find(friendsTeam, plr.Name) or table.find(friendsTeam, plr.DisplayName)
+end
+
 local function expand()
     for _, plr in Players:GetPlayers() do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild(selectedPart) then
-            local part = plr.Character[selectedPart]
+        if plr ~= LocalPlayer and plr.Character and not isFriend(plr) then
+            if aliveCheckEnabled and not isPlayerAlive(plr) then continue end
+
+            local part = plr.Character:FindFirstChild(selectedPart)
             if part and part:IsA("BasePart") then
                 if not originalData[plr] then
-                    originalData[plr] = {
-                        Size = part.Size,
-                        Transparency = part.Transparency,
-                        CanCollide = part.CanCollide,
-                        Massless = part.Massless
-                    }
+                    originalData[plr] = {Size = part.Size, Transparency = part.Transparency, CanCollide = part.CanCollide, Massless = part.Massless}
                 end
+
                 part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
                 part.Transparency = 0.6
                 part.CanCollide = false
                 part.Massless = true
+
+                if not highlights[plr] then
+                    local highlight = Instance.new("Highlight")
+                    highlight.FillColor = highlightSettings.FillColor
+                    highlight.OutlineColor = highlightSettings.OutlineColor
+                    highlight.FillTransparency = highlightSettings.FillTransparency
+                    highlight.OutlineTransparency = 0
+                    highlight.Adornee = highlightOnlyHead and (plr.Character:FindFirstChild("Head") or plr.Character) or plr.Character
+                    highlight.Parent = plr.Character
+                    highlights[plr] = highlight
+                else
+                    local hl = highlights[plr]
+                    hl.FillColor = highlightSettings.FillColor
+                    hl.OutlineColor = highlightSettings.OutlineColor
+                    hl.FillTransparency = highlightSettings.FillTransparency
+                    hl.Adornee = highlightOnlyHead and (plr.Character:FindFirstChild("Head") or plr.Character) or plr.Character
+                end
             end
         end
     end
@@ -2234,65 +2283,156 @@ local function restoreAll()
                 part.Massless = data.Massless
             end
         end
+        if highlights[plr] then highlights[plr]:Destroy() highlights[plr] = nil end
     end
     originalData = {}
 end
 
--- ======================= OBSIDIAN - SOLO PARA PC =======================
-local HitboxBox = Tabs.Combat:AddLeftGroupbox("Hitbox Bypass", "target")
+-- ======================= UI =======================
+local HitboxBox = Tabs.Combat:AddLeftGroupbox("Hitbox Expander", "target")
 
--- Toggle principal (PC)
-HitboxBox:AddToggle("HitboxPC", {
-    Text = "Hitbox",
-    Default = false,
-    Tooltip = "NYX EXOTIC 2025 - Bypass Byfron",
-    Callback = function(state)
-        hitboxEnabled = state
-
-        if hitboxEnabled then
-            if connection then connection:Disconnect() end
-            connection = RunService.Heartbeat:Connect(expand)
-            Library:Notify("NYX Hitbox ➜ ON", 3)
-        else
-            if connection then connection:Disconnect() connection = nil end
-            restoreAll()
-            Library:Notify("NYX Hitbox ➜ OFF", 3)
-        end
+HitboxBox:AddToggle("HitboxPC", {Text = "Hitbox Expander", Default = false, Callback = function(state)
+    hitboxEnabled = state
+    if hitboxEnabled then
+        if connection then connection:Disconnect() end
+        connection = RunService.Heartbeat:Connect(expand)
+        Library:Notify("Hitbox Expander ➜ ON", 3)
+    else
+        if connection then connection:Disconnect() connection = nil end
+        restoreAll()
+        Library:Notify("Hitbox Expander ➜ OFF", 3)
     end
+end})
+
+HitboxBox:AddToggle("AliveCheck", {Text = "Alive Check", Default = true, Callback = function(state)
+    aliveCheckEnabled = state
+    if hitboxEnabled then restoreAll() task.wait(0.05) expand() end
+end})
+
+HitboxBox:AddToggle("HighlightOnlyHead", {Text = "Highlight Only on Head", Default = false, Callback = function(state)
+    highlightOnlyHead = state
+    if hitboxEnabled then restoreAll() task.wait(0.05) expand() end
+end})
+
+HitboxBox:AddDivider()
+HitboxBox:AddLabel("Highlight Settings")
+
+HitboxBox:AddLabel("Fill Color"):AddColorPicker("HighlightFillColor", {Default = highlightSettings.FillColor, Callback = function(color)
+    highlightSettings.FillColor = color
+    if hitboxEnabled then task.spawn(expand) end
+end})
+
+HitboxBox:AddLabel("Outline Color"):AddColorPicker("HighlightOutlineColor", {Default = highlightSettings.OutlineColor, Callback = function(color)
+    highlightSettings.OutlineColor = color
+    if hitboxEnabled then task.spawn(expand) end
+end})
+
+HitboxBox:AddSlider("HighlightTransparency", {Text = "Fill Transparency", Default = 0, Min = 0, Max = 100, Rounding = 1, Callback = function(value)
+    highlightSettings.FillTransparency = value / 100
+    if hitboxEnabled then task.spawn(expand) end
+end})
+
+HitboxBox:AddDropdown("HitboxPart", {Values = availableParts, Default = 1, Text = "Target Body Part", Callback = function(part)
+    if hitboxEnabled then restoreAll() selectedPart = part task.wait(0.05) expand() else selectedPart = part end
+    Library:Notify("Target Part: " .. part, 2)
+end})
+
+HitboxBox:AddSlider("HitboxSize", {Text = "Hitbox Size", Default = 5, Min = 0, Max = 30, Rounding = 1, Callback = function(value)
+    hitboxSize = value
+    if hitboxEnabled then task.spawn(expand) end
+end})
+
+-- ======================= FRIENDS TEAM (IGUAL QUE EN ESP NAME) =======================
+HitboxBox:AddDivider()
+HitboxBox:AddLabel("Friends Team")
+
+-- Dropdown con "----" por defecto (igual que en tu ESP Name)
+local playerDropdown = HitboxBox:AddDropdown("FriendPlayerSelect", {
+    Text = "Select Player",
+    Values = {"----"},
+    Default = 1,
+    Callback = function() end
 })
 
--- Dropdown para cambiar parte
-HitboxBox:AddDropdown("HitboxPart", {
-    Values = availableParts,
-    Default = 1,
-    Text = "Body Part",
-    Callback = function(part)
+-- Función para actualizar la lista (copia exacta del ESP Name)
+local function UpdatePlayerDropdown()
+    local values = {"----"} -- Siempre mantiene "----" como primera opción
+    for _, plr in Players:GetPlayers() do
+        if plr ~= LocalPlayer then
+            table.insert(values, plr.DisplayName .. " (" .. plr.Name .. ")")
+        end
+    end
+    if #values == 1 then
+        values = {"---- (No players)"}
+    end
+
+    playerDropdown:SetValues(values)
+
+    -- Forzar que siga seleccionado "----" si no había selección válida
+    if playerDropdown.Value == "----" or playerDropdown.Value == nil or not table.find(values, playerDropdown.Value) then
+        playerDropdown:SetValue("----")
+    end
+end
+
+-- Actualizar al cargar
+UpdatePlayerDropdown()
+
+-- Actualizar cuando entren/salgan jugadores
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then
+        task.wait(0.1)
+        UpdatePlayerDropdown()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.wait(0.1)
+    UpdatePlayerDropdown()
+end)
+
+-- Botón Confirmar amigo
+HitboxBox:AddButton("Add to Friends Team", function()
+    local selected = playerDropdown.Value
+    if not selected or selected == "----" or selected == "---- (No players)" then
+        Library:Notify("Select a player first", 3)
+        return
+    end
+
+    local username = selected:match("%((.-)%)")
+    local displayname = selected:match("(.-)%s%(") or selected
+    local targetName = username or displayname
+
+    if not table.find(friendsTeam, targetName) then
+        table.insert(friendsTeam, targetName)
+        Library:Notify("Friend added: " .. selected .. " → Immune", 4)
+
         if hitboxEnabled then
             restoreAll()
-            selectedPart = part
             task.wait(0.05)
             expand()
-        else
-            selectedPart = part
         end
-        Library:Notify("Parte: " .. part, 2)
-    end
-})
 
--- Slider para tamaño
-HitboxBox:AddSlider("HitboxSize", {
-    Text = "Size",
-    Default = 0,
-    Min = 0,
-    Max = 30,
-    Rounding = 1,
-    Callback = function(value)
-        hitboxSize = value
-        if hitboxEnabled then
-            task.spawn(expand)
-        end
+        -- Volver a "----" después de confirmar
+        playerDropdown:SetValue("----")
+    else
+        Library:Notify("Already in Friends Team", 3)
     end
-})
+end)
+
+-- Botón Clear Friends
+HitboxBox:AddButton("Clear Friends Team", function()
+    friendsTeam = {}
+    Library:Notify("Friends Team cleared", 4)
+
+    if hitboxEnabled then
+        restoreAll()
+        task.wait(0.05)
+        expand()
+    end
+
+    playerDropdown:SetValue("----")
+end)
+
 
 local AntiAFKConnection
 CharacterBox:AddToggle("Anti-AFK", {
@@ -2313,262 +2453,14 @@ CharacterBox:AddToggle("Anti-AFK", {
         end
     end
 })
-
-local function UltraLowGraphics()
-    -- 1. Forzar calidad gráfica al mínimo
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-
-    game.Lighting.GlobalShadows = false
-    game.Lighting.FogEnd = 9e9
-    game.Lighting.Brightness = 1
-    if game.Lighting:FindFirstChild("Atmosphere") then
-        game.Lighting.Atmosphere:Destroy()
-    end
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") 
-        or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam") 
-        or obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
-            obj:Destroy()
-        end
-    end
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            -- Quitar textura/material visual
-            obj.Material = Enum.Material.Plastic       -- o SmoothPlastic / ForceField
-            obj.Color = Color3.new(0.5, 0.5, 0.5)       -- color gris neutro (opcional)
-            
-            -- Si tiene MeshPart con textura
-            if obj:IsA("MeshPart") then
-                obj.TextureID = ""                      -- eliminar textura del mesh
-                obj.Material = Enum.Material.SmoothPlastic
-            end
-        end
-
-        if obj:IsA("SpecialMesh") or obj:IsA("BlockMesh") or obj:IsA("CylinderMesh") then
-            obj.TextureId = ""
-        end
-    end
-
-    for _, effect in ipairs(game.Lighting:GetChildren()) do
-        if effect:IsA("PostEffect") then
-            effect.Enabled = false
-        end
-    end
-
-    Library:Notify("Ultra Low Graphics ACTIVADO (Texturas eliminadas +200 FPS)", 5)
-end
-
-CharacterBox:AddToggle("UltraLowGFX", {
-    Text = "Low Graphic",
-    Default = false,
-    Tooltip = "Elimina TODAS las texturas de Parts/Modelos + partículas + sombras",
-    Callback = function(state)
-        if state then
-            UltraLowGraphics()
-        else
-            Library:Notify("Reinicia el juego para restaurar texturas", 4)
-        end
-    end
-})
-
-local InstaProx_Enabled = false
-local InstaProx_HookConn = nil
-local InstaProx_RemoveConn = nil
-local InstaProx_Originals = {} 
-
-local function applyInstaProx(prompt)
-    task.spawn(function()
-        task.wait(math.random(5,15)/100)
-        local hold = prompt.HoldDuration
-        local maxd = prompt.MaxActivationDistance
-        local los = prompt.RequiresLineOfSight
-        
-        InstaProx_Originals[prompt] = {hold, maxd, los}
-        
-        pcall(function()
-            prompt.HoldDuration = 0
-            prompt.MaxActivationDistance = math.huge
-            prompt.RequiresLineOfSight = false
-        end)
-    end)
-end
-
-local function restoreInstaProx()
-    for prompt, orig in pairs(InstaProx_Originals) do
-        if prompt and prompt.Parent then
-            pcall(function()
-                prompt.HoldDuration = orig[1]
-                prompt.MaxActivationDistance = orig[2]
-                prompt.RequiresLineOfSight = orig[3]
-            end)
-        end
-    end
-    InstaProx_Originals = {}
-end
-
-local function applyToExisting()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            applyInstaProx(obj)
-        end
-    end
-end
-
-CharacterBox:AddToggle("InstaProximity", {
-    Text = "Insta Proximity - (In Testing)",
-    Default = false,
-    Tooltip = "Activa prompts instantáneos (Hold 0, distancia infinita, sin LOS) - Ultra Safe",
-    Callback = function(state)
-        InstaProx_Enabled = state
-        
-        if state then
-            -- ACTIVAR
-            applyToExisting()
-            InstaProx_HookConn = workspace.DescendantAdded:Connect(function(obj)
-                if obj:IsA("ProximityPrompt") then
-                    applyInstaProx(obj)
-                end
-            end)
-            InstaProx_RemoveConn = workspace.DescendantRemoving:Connect(function(obj)
-                InstaProx_Originals[obj] = nil
-            end)
-            Library:Notify("Insta Proximity → ON", 4)
-        else
-            -- DESACTIVAR
-            restoreInstaProx()
-            if InstaProx_HookConn then InstaProx_HookConn:Disconnect() end
-            if InstaProx_RemoveConn then InstaProx_RemoveConn:Disconnect() end
-            InstaProx_HookConn = nil
-            InstaProx_RemoveConn = nil
-            Library:Notify("Insta Proximity → OFF", 3)
-        end
-    end
-})
-
-game.Players.LocalPlayer.CharacterRemoving:Connect(function()
-    if InstaProx_Enabled then
-        restoreInstaProx()
-    end
-end)
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Guardar valores originales
-local OriginalNameText = ""
-local OriginalRankText = ""
-
--- Ruta exacta que me diste
-local function GetNameLabel()
-    local char = workspace.Characters:FindFirstChild(LocalPlayer.Name)
-    if not char then return nil end
-    
-    local head = char:FindFirstChild("Head")
-    if not head then return nil end
-    
-    local nametag = head:FindFirstChild("NameTag")
-    if not nametag then return nil end
-    
-    local mainframe = nametag:FindFirstChild("MainFrame")
-    if not mainframe then return nil end
-    
-    return mainframe:FindFirstChild("NameLabel")
-end
-
-local function GetRankLabel()
-    local char = workspace.Characters:FindFirstChild(LocalPlayer.Name)
-    if not char then return nil end
-    
-    local head = char:FindFirstChild("Head")
-    if not head then return nil end
-    
-    local ranktag = head:FindFirstChild("RankTag")
-    if not ranktag then return nil end
-    
-    local mainframe = ranktag:FindFirstChild("MainFrame")
-    if not mainframe then return nil end
-    
-    return mainframe:FindFirstChild("NameLabel")
-end
-
--- Aplicar texto personalizado
-local function ApplyCustomTags(name, rank)
-    local nameLabel = GetNameLabel()
-    local rankLabel = GetRankLabel()
-    
-    if nameLabel and name and name ~= "" then
-        nameLabel.Text = name
-    end
-    if rankLabel and rank and rank ~= "" then
-        rankLabel.Text = rank
-    end
-end
-
--- Restaurar valores originales
-local function ResetTags()
-    local nameLabel = GetNameLabel()
-    local rankLabel = GetRankLabel()
-    
-    if nameLabel then
-        nameLabel.Text = OriginalNameText
-    end
-    if rankLabel then
-        rankLabel.Text = OriginalRankText
-    end
-end
-
--- Guardar originales al cargar personaje
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    local nameLabel = GetNameLabel()
-    local rankLabel = GetRankLabel()
-    if nameLabel then
-        OriginalNameText = nameLabel.Text
-    end
-    if rankLabel then
-        OriginalRankText = rankLabel.Text
-    end
-end)
-
--- UI EN EXPLOITS & FUN
-ExploitsBox:AddInput("CustomNameTag", {
-    Text = "Name Tag - (In Testing)",
-    Placeholder = "Tu nombre personalizado",
-    Callback = function() end
-})
-
-ExploitsBox:AddInput("CustomRankTag", {
-    Text = "Rank Tag - (In Testing)",
-    Placeholder = "Tu rank personalizado",
-    Callback = function() end
-})
-
-ExploitsBox:AddButton("Apply Tags", function()
-    local name = Library.Options.CustomNameTag.Value
-    local rank = Library.Options.CustomRankTag.Value
-    ApplyCustomTags(name, rank)
-    Library:Notify("Tags aplicados (NameLabel y RankLabel)", 3)
-end)
-
-ExploitsBox:AddButton("HideName", function()
-    ResetTags()
-    Library.Options.CustomNameTag:SetValue("")
-    Library.Options.CustomRankTag:SetValue("")
-    Library:Notify("Tags restaurados al original", 3)
-end)
-
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- DETECCIÓN EXACTA DE MOBILE (Touch + sin teclado)
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
--- Crear GUI (siempre en CoreGui para que sea visible)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "GiveFloatingGui"
 ScreenGui.ResetOnSpawn = false
@@ -2576,7 +2468,7 @@ ScreenGui.Parent = game:GetService("CoreGui")
 
 local GiveFrame = Instance.new("Frame")
 GiveFrame.Size = UDim2.new(0, 110, 0, 30)
-GiveFrame.Position = UDim2.new(0, 20, 0.5, -100)  -- Posición optimizada Mobile
+GiveFrame.Position = UDim2.new(0, 20, 0.5, -100)
 GiveFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 GiveFrame.BorderSizePixel = 0
 GiveFrame.Visible = false
@@ -2600,7 +2492,6 @@ GiveLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 GiveLabel.Font = Enum.Font.GothamBold
 GiveLabel.Parent = GiveFrame
 
--- Efecto press (morado)
 GiveFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         TweenService:Create(GiveFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(141, 35, 222)}):Play()
@@ -2613,7 +2504,6 @@ GiveFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- SIMULAR TECLA Q (humanized)
 local function SimulateQ()
     local hold = math.random(60, 140) / 1000
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
@@ -2627,70 +2517,56 @@ GiveFrame.InputBegan:Connect(function(input)
     end
 end)
 
--- TOGGLE EN CHARACTERBOX - SOLO FUNCIONAL EN MOBILE
-CharacterBox:AddToggle("ShowGiveFloating", {
-    Text = "Show Give (Mobile Only)",
+ExploitsBox:AddToggle("ShowGiveFloating", {
+    Text = "Show Give Button (Mobile Only)",
     Default = false,
-    Tooltip = "Muestra botón flotante 'Give' - SOLO funciona en Mobile",
+    Tooltip = "Shows floating 'Give' button - Works only on Mobile",
     Callback = function(state)
-        -- Si es PC → bloquea el toggle y fuerza OFF
         if not isMobile then
-            Library.Options.ShowGiveFloating:SetValue(false)  -- Fuerza OFF
-            Library:Notify("❌ Esta función SOLO está disponible en Mobile", 5)
+            Library.Options.ShowGiveFloating:SetValue(false)
+            Library:Notify("This feature is only available on Mobile", 5)
             return
         end
-
-        -- Solo en Mobile permite cambiar el estado
         GiveFrame.Visible = state
-
         if state then
-            Library:Notify("Botón Give → ON (Mobile)", 5)
+            Library:Notify("Give Button ON (Mobile)", 5)
         else
-            Library:Notify("Botón Give → OFF", 3)
+            Library:Notify("Give Button OFF", 3)
         end
     end
 })
-
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-
 local CLIPS = {"Drum Magazine","Heavy Magazine","Speed Loader","Extended Clip","Standard Clip"}
-
 getgenv().AutoSpendSpamEnabled = false
 local AutoSpendSpamConnection = nil
 
 local function UseClipSpam()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("Humanoid") then return false end
-
     local tool = nil
     local bp = LocalPlayer.Backpack
-
     for i = 1, #CLIPS do
         tool = bp:FindFirstChild(CLIPS[i])
         if tool then break end
     end
-
     if not tool then
         for i = 1, #CLIPS do
             tool = char:FindFirstChild(CLIPS[i])
             if tool then break end
         end
     end
-
     if tool then
         if tool.Parent == bp then
             char.Humanoid:EquipTool(tool)
-            task.wait(0.1) 
+            task.wait(0.1)
         end
-
         VirtualInputManager:SendMouseButtonEvent(0,0,0,true,game,0)
-        task.wait(0.05 + math.random(1,5)/100)  -- Hold ultra corto
+        task.wait(0.05 + math.random(1,5)/100)
         VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0)
-
         return true
     else
         return false
@@ -2700,18 +2576,14 @@ end
 local function StartAutoSpendSpam()
     if getgenv().AutoSpendSpamEnabled then return end
     getgenv().AutoSpendSpamEnabled = true
-
-    Library:Notify("Auto Spend Spam → ON (consume TODOS los clips RÁPIDO)", 5)
-
+    Library:Notify("Auto Spend Spam → ON (consumes ALL clips FAST)", 5)
     AutoSpendSpamConnection = RunService.Heartbeat:Connect(function()
         if not getgenv().AutoSpendSpamEnabled then return end
-
         local hasClip = UseClipSpam()
-
         if not hasClip then
             getgenv().AutoSpendSpamEnabled = false
             Library.Options.AutoSpendSpamToggle:SetValue(false)
-            Library:Notify("Auto Spend Spam → OFF (todos los clips consumidos)", 5)
+            Library:Notify("Auto Spend Spam → OFF (all clips consumed)", 5)
             if AutoSpendSpamConnection then
                 AutoSpendSpamConnection:Disconnect()
                 AutoSpendSpamConnection = nil
@@ -2729,10 +2601,10 @@ local function StopAutoSpendSpam()
     Library:Notify("Auto Spend Spam → OFF", 3)
 end
 
-CharacterBox:AddToggle("AutoSpendSpamToggle", {
+ExploitsBox:AddToggle("AutoSpendSpamToggle", {
     Text = "Auto Spend Clip",
     Default = false,
-    Tooltip = "Consume TODOS los clips lo más RÁPIDO posible (spam safe). Se apaga solo al terminar",
+    Tooltip = "Consumes ALL clips as FAST as possible (safe spam). Turns off automatically when finished",
     Callback = function(state)
         if state then
             StartAutoSpendSpam()
@@ -2741,6 +2613,72 @@ CharacterBox:AddToggle("AutoSpendSpamToggle", {
         end
     end
 })
+local FPSBoosterBox = Tabs.Player:AddLeftGroupbox("FPS Booster", "zap")
+
+getgenv().TargetFPS = 60
+getgenv().UltraLowEnabled = false
+
+local function ClearEffects(parent)
+    for _, obj in pairs(parent:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or 
+           obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam") then
+            obj:Destroy()
+        end
+        if obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
+            obj:Destroy()
+        end
+        if obj:IsA("MeshPart") then
+            obj.TextureID = ""
+            obj.Material = Enum.Material.SmoothPlastic
+        end
+        if obj:IsA("SpecialMesh") or obj:IsA("BlockMesh") or obj:IsA("CylinderMesh") then
+            obj.TextureId = ""
+        end
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+        end
+    end
+end
+
+local function UltraLowGraphics()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    game.Lighting.GlobalShadows = false
+    game.Lighting.FogEnd = 9e9
+    game.Lighting.Brightness = 1
+    if game.Lighting:FindFirstChild("Atmosphere") then game.Lighting.Atmosphere:Destroy() end
+    for _, e in pairs(game.Lighting:GetChildren()) do
+        if e:IsA("PostEffect") then e.Enabled = false end
+    end
+    ClearEffects(workspace)
+    ClearEffects(game.Lighting)
+end
+
+local function ApplyFPSLimit(fps)
+    getgenv().TargetFPS = fps
+    if setfpscap then setfpscap(fps == 0 and 9999 or fps) end
+end
+
+FPSBoosterBox:AddSlider("FPSLimit", {
+    Text = "FPS Limit",
+    Min = 0,
+    Max = 244,
+    Default = 60,
+    Rounding = 1,
+    Callback = ApplyFPSLimit
+})
+
+FPSBoosterBox:AddButton("Low Graphics", function()
+    getgenv().UltraLowEnabled = not getgenv().UltraLowEnabled
+    if getgenv().UltraLowEnabled then
+        UltraLowGraphics()
+        spawn(function()
+            while getgenv().UltraLowEnabled do
+                task.wait(2)
+                ClearEffects(workspace)
+            end
+        end)
+    end
+end)
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
@@ -2758,7 +2696,6 @@ Tabs.Settings:AddLeftGroupbox("Menu"):AddToggle("CustomCursor", {
 Tabs.Settings:AddLeftGroupbox("Menu"):AddLabel("Menu Bind: M (Fixed)")
 Tabs.Settings:AddLeftGroupbox("Menu"):AddButton("Unload", function() Library:Unload() end)
 
--- Tecla 
 game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
     if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
 end)
