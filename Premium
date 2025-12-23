@@ -2689,13 +2689,12 @@ local SAFE_OFFSET_Y = 4
 -- Predefined locations
 local PredefinedLocations = {
     ["Default Spawn"] = Vector3.new(0, 0, 0),
-    ["Safe House Roof"] = Vector3.new(-145.32, 48.50, -320.67),
-    ["Gun Store"] = Vector3.new(120.45, 15.20, -180.34),
-    ["Hospital Roof"] = Vector3.new(-50.78, 65.80, 210.12),
-    ["Bank"] = Vector3.new(85.20, 12.50, 45.89),
-    ["Apartments"] = Vector3.new(-220.15, 20.30, -90.45),
-    ["Gas Station"] = Vector3.new(300.67, 10.00, -400.23),
-    ["Police Station"] = Vector3.new(-80.45, 15.00, 150.78)
+    ["DealerShip"] = Vector3.new(704.38, 3.35, 419.68),
+    ["Gun Store1"] = Vector3.new(192.75, 3.38, -174.21),
+    ["Gun Store2"] = Vector3.new(-460.47, 3.38, 342.11),
+    ["Bank"] = Vector3.new(-42.90, 3.63, -347.81),
+    ["Apartments"] = Vector3.new(1189.84, 3.35, -254.32),
+    ["Casino"] = Vector3.new(1131.65, 3.00, -37.64),
 }
 
 local function CopyCurrentPosition()
@@ -2817,7 +2816,7 @@ SpawnBox:AddDivider()
 
 SpawnBox:AddDropdown("LocationMap", {
     Text = "Location Map",
-    Values = {"Default Spawn", "Safe House Roof", "Gun Store", "Hospital Roof", "Bank", "Apartments", "Gas Station", "Police Station"},
+    Values = {"Default Spawn", "DealerShip", "Gun Store1", "Gun Store2", "Bank", "Apartments", "Casino"},
     Default = 1,
     Callback = function(value)
         SetPredefinedSpawn(value)
