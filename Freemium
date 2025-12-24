@@ -1,823 +1,356 @@
--- Repo principal (para Library.lua)
-local repo = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/"
-
--- Cargar Library
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-
--- Cargar addons directamente desde la raíz (NO en /addons/)
-local ThemeManager = loadstring(game:HttpGet(repo .. "ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "SaveManager.lua"))()
-
-local Window = Library:CreateWindow({
-    Title = " И  Ξ Ｘ | FREE",
-    Icon = 126669385928299,
-    Footer = "Versión: 2.5 ¡Beta! | FREEMIUM SCRIPT",
-    AutoShow = true,
-    ShowCustomCursor = false,
-    NotifySide = "Right"
-})
-
-local Tabs = {
-    Main = Window:AddTab("Home", "layout-dashboard"),
-    Combat = Window:AddTab("Combat", "crosshair"),
-    Visuals = Window:AddTab("Visuals", "eye"),
-    Player = Window:AddTab("Player", "user"),
-    Settings = Window:AddTab("Settings", "settings")
-}
-
--- ==================== HOME TAB ====================
-local PlayerInfo = Tabs.Main:AddLeftGroupbox("Player Info", "accessibility")
-local UsernameLabel = PlayerInfo:AddLabel("👤 Username: " .. game.Players.LocalPlayer.Name)
-local DisplayLabel = PlayerInfo:AddLabel("📝 Display: @" .. game.Players.LocalPlayer.DisplayName)
-local UserIDLabel = PlayerInfo:AddLabel("🔢 User ID: " .. game.Players.LocalPlayer.UserId)
-local PlaytimeLabel = PlayerInfo:AddLabel("⏰ Playtime: 00:00")
-local RegionLabel = PlayerInfo:AddLabel("🌐 Pais/Región: Unknown")
-
-local ServerInfo = Tabs.Main:AddRightGroupbox("Server Info", "server")
-local GameLabel = ServerInfo:AddLabel("Game: Loading...")
-local CreatorLabel = ServerInfo:AddLabel("Creator: Loading...")
-local PlaceIDLabel = ServerInfo:AddLabel("Place ID: " .. game.PlaceId)
-local JobIDLabel = ServerInfo:AddLabel("Job ID: " .. (game.JobId == "" and "Private" or string.sub(game.JobId, 1, 20).."..."))
-local PlayersLabel = ServerInfo:AddLabel("Players: " .. #game.Players:GetPlayers() .. " / " .. game.Players.MaxPlayers)
-
-spawn(function()
-    local success, info = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    end)
-    if success then
-        GameLabel:SetText("Game: " .. info.Name)
-        CreatorLabel:SetText("Creator: " .. (info.Creator.Name or "Roblox"))
-    end
-end)
-
-local function UpdatePlayers()
-    local current = #game.Players:GetPlayers()
-    local max = game.Players.MaxPlayers
-    local color = current >= max * 0.8 and "ff0000" or current >= max * 0.5 and "ffff00" or "00ff00"
-    PlayersLabel:SetText("Players: <font color='#" .. color .. "'>" .. current .. " / " .. max .. "</font>")
-end
-UpdatePlayers()
-game.Players.PlayerAdded:Connect(UpdatePlayers)
-game.Players.PlayerRemoving:Connect(UpdatePlayers)
-
-local SystemInfo = Tabs.Main:AddRightGroupbox("System Info", "monitor")
-local FPSLabel = SystemInfo:AddLabel("zap FPS: --")
-local PingLabel = SystemInfo:AddLabel("wifi Ping: -- ms")
-local RAMLabel = SystemInfo:AddLabel("database RAM: -- MB")
-local PlatformLabel = SystemInfo:AddLabel("laptop Plataforma: Detecting...")
-local ExecutorLabel = SystemInfo:AddLabel("code Executor: Detecting...")
-local StatusLabel = SystemInfo:AddLabel("check Status: Loaded")
-
-spawn(function()
-    local exec = "Unknown"
-    local platform = "PC"
-    if identifyexecutor then exec = identifyexecutor()
-    elseif getexecutorname then exec = getexecutorname()
-    elseif syn then exec = "Synapse X"
-    elseif KRNL_LOADED then exec = "Krnl"
-    elseif Fluxus then exec = "Fluxus"
-    elseif is_solara then exec = "Solara"
-    elseif gethui then exec = "Delta / Codex"
-    end
-
-    local UIS = game:GetService("UserInputService")
-    if UIS.TouchEnabled and not UIS.KeyboardEnabled then
-        platform = "Mobile"
-        if string.find(game:GetService("UserGameSettings"):GetPlatform(), "iOS") then
-            platform = "iOS"
-        else
-            platform = "Android"
-        end
-    elseif UIS.GamepadEnabled then
-        platform = "Console"
-    else
-        platform = "PC"
-    end
-
-    local platformIcon = platform == "PC" and "Laptop"
-                      or platform == "Android" and "SmartPhone"
-                      or platform == "iOS" and "Tablet"
-                      or "Gamepad"
-    PlatformLabel:SetText(platformIcon .. " Plataforma: " .. platform)
-    ExecutorLabel:SetText("Code Executor: " .. exec)
-    StatusLabel:SetText("check Status: 🟢 Loaded")
-end)
-
-local frameCount = 0
-local lastUpdate = tick()
-game:GetService("RunService").Heartbeat:Connect(function()
-    frameCount += 1
-    if tick() - lastUpdate >= 1 then
-        local fps = math.floor(frameCount)
-        local color = fps >= 60 and "00ff00" or fps >= 40 and "ffff00" or "ff0000"
-        FPSLabel:SetText("Zap FPS: <font color='#" .. color .. "'>" .. fps .. "</font>")
-        frameCount = 0
-        lastUpdate = tick()
-    end
-end)
-
-spawn(function()
-    while task.wait(1.5) do
-        local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
-        local color = ping <= 60 and "00ff00" or ping <= 120 and "ffff00" or "ff0000"
-        PingLabel:SetText("Wi-Fi Ping: <font color='#" .. color .. "'>" .. ping .. " ms</font>")
-    end
-end)
-
-spawn(function()
-    while task.wait(2) do
-        local ram = math.floor(collectgarbage("count") / 1024)
-        RAMLabel:SetText("DataBase RAM: " .. ram .. " MB")
-    end
-end)
-
-local startTime = tick()
-coroutine.wrap(function()
-    while task.wait(1) do
-        local elapsed = tick() - startTime
-        local minutes = math.floor(elapsed / 60)
-        local seconds = math.floor(elapsed % 60)
-        if minutes >= 60 then
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#00ff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        elseif minutes >= 30 then
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ffff00'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        elseif minutes >= 10 then
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ff8800'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        else
-            PlaytimeLabel:SetText("⏰ Playtime: <font color='#ff0000'>" .. minutes .. ":" .. string.format("%02d", seconds) .. "</font>")
-        end
-    end
-end)()
-
-spawn(function()
-    local region = "Unknown"
-    pcall(function()
-        region = game:GetService("LocalizationService"):GetCountryRegionForPlayerAsync(game.Players.LocalPlayer)
-    end)
-    RegionLabel:SetText("🌐 País/Región: " .. (region or "Unknown"))
-end)
-
--- ==================== COMBAT TAB - AIMLOCK ====================
-getgenv().Aimlock = {
-    Enabled = false,
-    Aiming = false,
-    Part = "Head",
-    OldPart = "Head",
-    Radius = 80,
-    TeamCheck = false,
-    Predict = true,
-    Prediction = 15,
-    Smooth = 0.14,
-    AliveCheck = false,
-    Airshot = false
-}
-
-local Players = game:GetService("Players")
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
-local Target = nil
 
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Radius = 80
-FOVCircle.Color = Color3.fromRGB(255, 0, 70)
-FOVCircle.Thickness = 1.6
-FOVCircle.NumSides = 16
-FOVCircle.Filled = false
-FOVCircle.Transparency = 0.9
-FOVCircle.Visible = false
+local Player = game.Players.LocalPlayer
 
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + 36)
-end)
+getgenv().NYX_Authorized = getgenv().NYX_Authorized or false
+getgenv().NYX_Key = getgenv().NYX_Key or ""
+getgenv().NYX_HWID = getgenv().NYX_HWID or nil
+getgenv().NYX_Level = getgenv().NYX_Level or "None"
 
-local function GetClosest()
-    local closest = nil
-    local dist = getgenv().Aimlock.Radius
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            if getgenv().Aimlock.TeamCheck and plr.Team == LocalPlayer.Team then continue end
-            local part = plr.Character:FindFirstChild(getgenv().Aimlock.Part) or plr.Character:FindFirstChild("Head")
-            if part then
-                local sp, onscreen = Camera:WorldToViewportPoint(part.Position)
-                if onscreen then
-                    local d = (Vector2.new(sp.X, sp.Y) - Vector2.new(Mouse.X, Mouse.Y + 36)).Magnitude
-                    if d < dist then
-                        dist = d
-                        closest = plr
-                    end
-                end
-            end
-        end
+-- ==================== CONFIGURATION ====================
+local DISCORD_WEBHOOK = "https://webhook.newstargeted.com/api/webhooks/1451687966534537390/d3etUreVsXj9u7KBFyvKlxVszX9sC_m_lib5d2ceGT8ol9tqc_bFLIIElfIUDd_lZ_hW"
+local OWNER_HWID = "37343535303063616462303063613562306433626539633632656632626130353134363632333863386335666532663738663338363364386535636631353361"
+local DISCORD_INVITE = "F3SDzkZa6U"
+
+-- ==================== DETECTAR EXECUTOR ====================
+local function getExecutorName()
+    if identifyexecutor then
+        local name, _ = identifyexecutor()
+        return name or "Unknown"
+    elseif getexecutorname then
+        return getexecutorname()
+    elseif syn then
+        return "Synapse X"
+    elseif KRNL_LOADED then
+        return "Krnl"
+    elseif fluxus then
+        return "Fluxus"
+    elseif gethwid then
+        return "Solara / Codex"
     end
-    return closest
+    return "Unknown Executor"
 end
 
-RunService.Heartbeat:Connect(function()
-    if not getgenv().Aimlock.Enabled or not getgenv().Aimlock.Aiming then return end
-    Target = GetClosest()
-    if getgenv().Aimlock.AliveCheck and Target and Target.Character and Target.Character:FindFirstChild("Humanoid") and Target.Character.Humanoid.Health <= 0 then
-        Target = nil
-    end
-    if getgenv().Aimlock.Airshot and Target and Target.Character:FindFirstChild("Humanoid") then
-        if Target.Character.Humanoid.FloorMaterial == Enum.Material.Air then
-            getgenv().Aimlock.Part = "RightFoot"
-        else
-            getgenv().Aimlock.Part = getgenv().Aimlock.OldPart
-        end
-    end
-    if Target and Target.Character and Target.Character:FindFirstChild(getgenv().Aimlock.Part) then
-        local pos = Target.Character[getgenv().Aimlock.Part].Position
-        if getgenv().Aimlock.Predict then
-            pos = pos + (Target.Character[getgenv().Aimlock.Part].Velocity / getgenv().Aimlock.Prediction)
-        end
-        if getgenv().Aimlock.Smooth > 0 then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, pos), getgenv().Aimlock.Smooth)
-        else
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, pos)
-        end
-    end
-end)
+-- ==================== FECHA FORMATEADA ====================
+local function getFormattedDate()
+    return os.date("%d/%m/%Y • %H:%M:%S")
+end
 
-local AimBox = Tabs.Combat:AddLeftGroupbox("Aimlock (PC Only)", "sword")
-AimBox:AddToggle("AimlockEnabled", {
-    Text = "Aim Assist",
-    Default = false,
-    Tooltip = "Activa el aimlock",
-    Callback = function(v)
-        getgenv().Aimlock.Enabled = v
-    end
-}):AddKeyPicker("AimlockKey", {
-    Default = "B",
-    SyncToggleState = true,
-    Mode = "Toggle",
-    Text = "Aimlock Key",
-    Callback = function(v)
-        getgenv().Aimlock.Aiming = v
-    end
-})
-
-AimBox:AddDropdown("AimPart", {
-    Values = {"Head", "UpperTorso", "HumanoidRootPart", "LowerTorso"},
-    Default = 1,
-    Text = "Aim Part",
-    Callback = function(v)
-        getgenv().Aimlock.Part = v
-        getgenv().Aimlock.OldPart = v
-    end
-})
-
-AimBox:AddToggle("TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) getgenv().Aimlock.TeamCheck = v end })
-AimBox:AddToggle("AliveCheck", { Text = "Alive Check", Default = false, Callback = function(v) getgenv().Aimlock.AliveCheck = v end })
-AimBox:AddToggle("Prediction", { Text = "Prediction", Default = false, Callback = function(v) getgenv().Aimlock.Predict = v end })
-AimBox:AddToggle("Airshot", { Text = "Airshot Function", Default = false, Callback = function(v) getgenv().Aimlock.Airshot = v end })
-AimBox:AddSlider("Smoothness", {
-    Text = "Smoothness",
-    Default = 0,
-    Min = 0,
-    Max = 1,
-    Rounding = 2,
-    Callback = function(v)
-        getgenv().Aimlock.Smooth = v
-    end
-})
-AimBox:AddSlider("PredictionPower", {
-    Text = "Prediction Movement",
-    Default = 0,
-    Min = 0,
-    Max = 50,
-    Rounding = 1,
-    Callback = function(v)
-        getgenv().Aimlock.Prediction = v
-    end
-})
-
-local FOVBox = Tabs.Combat:AddRightGroupbox("FOV", "circle")
-FOVBox:AddToggle("ShowFOV", {
-    Text = "Show FOV Circle",
-    Default = false,
-    Callback = function(v)
-        FOVCircle.Visible = v
-    end
-})
-FOVBox:AddSlider("FOVSize", {
-    Text = "FOV Radius",
-    Default = 0,
-    Min = 0,
-    Max = 300,
-    Rounding = 1,
-    Callback = function(v)
-        getgenv().Aimlock.Radius = v
-        FOVCircle.Radius = v
-    end
-})
-FOVBox:AddLabel("FOV Color"):AddColorPicker("FOVColor", {
-    Default = Color3.fromRGB(255, 0, 70),
-    Callback = function(v)
-        FOVCircle.Color = v
-    end
-})
-
--- ==================== VISUALS TAB - ESP NAME ====================
-
--- ==================== ESP NAME + FRIENDLY CHECK (DROPDOWN CON "----" POR DEFECTO) ====================
-local ESP_Name_Enabled = false
-local ESP_Settings = {
-    NameColor = Color3.fromRGB(255, 255, 255),
-    FriendColor = Color3.fromRGB(0, 255, 0),
-    NameSize = 14,
-    AnimationSpeed = 0.3
-}
-
-local FriendsList = {}
-local ESPNameTexts = {}
-local Camera = workspace.CurrentCamera
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
--- Crear texto ESP
-local function CreateNameText(plr)
-    if plr == LocalPlayer then return end
-    if ESPNameTexts[plr] then 
-        ESPNameTexts[plr].text:Remove() 
-    end
-
-    local text = Drawing.new("Text")
-    text.Visible = false
-    text.Color = ESP_Settings.NameColor
-    text.Size = 0
-    text.Center = true
-    text.Outline = true
-    text.OutlineColor = Color3.new(0, 0, 0)
-    text.Font = 2
-    text.Transparency = 0
-
-    ESPNameTexts[plr] = {
-        text = text,
-        currentTrans = 0,
-        targetTrans = 0,
-        currentSize = 0
+-- ==================== EMBED AVANZADO ====================
+local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed, extraFields)
+    local embed = {
+        title = title,
+        description = description,
+        color = color,
+        fields = {
+            {name = "👤 Usuario", value = "**Display:** @" .. Player.DisplayName .. "\n**Username:** " .. Player.Name .. "\n**ID:** " .. Player.UserId, inline = false},
+            {name = "🛡️ Nivel de Acceso", value = (accessLevel == "Premium" and "🔑" or accessLevel == "Freemium" and "🔓" or accessLevel == "Owner" and "👑" or "❌") .. " **" .. accessLevel .. "**", inline = true},
+            {name = "⚙️ Executor", value = "**" .. getExecutorName() .. "**", inline = true},
+            {name = "🧬 HWID", value = "```HIDDEN```", inline = false},
+            {name = "⏰ Fecha y Hora", value = getFormattedDate(), inline = false}
+        },
+        footer = {text = "NYX Exotic • Security System"},
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
-end
 
--- Bucle principal del ESP
-RunService.RenderStepped:Connect(function()
-    for plr, data in pairs(ESPNameTexts) do
-        local char = plr.Character
-        local head = char and char:FindFirstChild("Head")
-        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-
-        if not ESP_Name_Enabled then
-            data.targetTrans = 0
-        else
-            if char and head and humanoid and humanoid.Health > 0 then
-                local headPos = head.Position + Vector3.new(0, 2.8, 0)
-                local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
-
-                if onScreen and screenPos.Z > 0 then
-                    data.targetTrans = 1
-                    data.text.Text = plr.DisplayName
-                    data.text.Position = Vector2.new(screenPos.X, screenPos.Y)
-
-                    local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
-                    data.text.Color = isFriend and ESP_Settings.FriendColor or ESP_Settings.NameColor
-
-                    data.text.Visible = true
-                else
-                    data.targetTrans = 0
-                    data.text.Visible = false
-                end
-            else
-                data.targetTrans = 0
-                data.text.Visible = false
-            end
-        end
-
-        data.currentTrans = data.currentTrans + (data.targetTrans - data.currentTrans) * ESP_Settings.AnimationSpeed
-        data.currentSize = data.currentSize + ((data.targetTrans == 1 and ESP_Settings.NameSize or 0) - data.currentSize) * ESP_Settings.AnimationSpeed
-
-        data.text.Transparency = math.clamp(data.currentTrans, 0, 1)
-        data.text.Size = math.floor(data.currentSize + 0.5)
-
-        if data.currentTrans < 0.01 then
-            data.text.Visible = false
-        end
+    if extraFields then
+        for _, f in pairs(extraFields) do table.insert(embed.fields, f) end
     end
-end)
 
--- Setup jugadores
-local function SetupPlayer(plr)
-    if plr == LocalPlayer then return end
-    CreateNameText(plr)
-    plr.CharacterAdded:Connect(function()
-        task.wait(0.6)
-        CreateNameText(plr)
+    local body = HttpService:JSONEncode({embeds = {embed}})
+
+    spawn(function()
+        pcall(function()
+            local req = syn and syn.request or request or http_request or http.request
+            if req then
+                req({
+                    Url = DISCORD_WEBHOOK,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = body
+                })
+            end
+        end)
     end)
 end
 
-for _, plr in Players:GetPlayers() do SetupPlayer(plr) end
-Players.PlayerAdded:Connect(SetupPlayer)
-Players.PlayerRemoving:Connect(function(plr)
-    if ESPNameTexts[plr] then
-        ESPNameTexts[plr].text:Remove()
-        ESPNameTexts[plr] = nil
-    end
-end)
+-- ==================== CONFIG ====================
+local Config = {
+    PremiumKeys = {},
+    PublicKeyRaw = "NewUpdateFix!",
+    PublicKeyClean = "",
+    StartDate = "23/12/2025 00:00",
+    EndDate = "26/12/2025 23:59",
+    AuthFile = "NYX_Auth.key",
+    FreemiumURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/Freemium",
+    PremiumURL = "https://raw.githubusercontent.com/TexaThebardo/nyx/refs/heads/main/premium",
+    PremiumKeysURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/PremiumKeys.json",
+}
+Config.PublicKeyClean = Config.PublicKeyRaw:gsub("[%s%-%.]", ""):upper()
 
--- ==================== UI CON DROPDOWN QUE EMPIEZA EN "----" ====================
-local ESPNameBox = Tabs.Visuals:AddLeftGroupbox("ESP Name", "type")
+local FREEMIUM_URL = Config.FreemiumURL
+local PREMIUM_URL = Config.PremiumURL
+local PublicKeyEnabled = true
+local BannedHWIDs = {}
+local ActiveUsers = {}
 
-ESPNameBox:AddToggle("ESPName", {
-    Text = "ESP Name",
-    Default = false,
-    Tooltip = "Nombres con animación + Friendly Check",
-    Callback = function(state)
-        ESP_Name_Enabled = state
-        Library:Notify(state and "ESP Name → ON" or "ESP Name → OFF", 4)
-    end
-}):AddColorPicker("NameColor", {
-    Default = Color3.fromRGB(255, 255, 255),
-    Title = "Color Normal",
-    Callback = function(color)
-        ESP_Settings.NameColor = color
-    end
-}):AddColorPicker("FriendNameColor", {
-    Default = Color3.fromRGB(0, 255, 0),
-    Title = "Color Amigos",
-    Callback = function(color)
-        ESP_Settings.FriendColor = color
-    end
-})
-
--- Dropdown con "----" por defecto
-local playerDropdown = ESPNameBox:AddDropdown("FriendPlayerSelect", {
-    Text = "Select Player",
-    Values = {"----"},  -- Empieza con esto para indicar que no hay selección
-    Default = 1,        -- Selecciona "----" por defecto
-    Callback = function() end
-})
-
--- Función para actualizar la lista de jugadores
-local function UpdatePlayerDropdown()
-    local values = {"----"}  -- Siempre mantiene "----" como primera opción
-    
-    for _, plr in Players:GetPlayers() do
-        if plr ~= LocalPlayer then
-            table.insert(values, plr.DisplayName .. " (" .. plr.Name .. ")")
+-- ==================== LOAD PREMIUM KEYS ====================
+local function loadPremiumKeys()
+    pcall(function()
+        local success, response = pcall(game.HttpGet, game, Config.PremiumKeysURL)
+        if success and response then
+            local jsonData = HttpService:JSONDecode(response)
+            if typeof(jsonData) == "table" then Config.PremiumKeys = jsonData end
         end
-    end
-    
-    if #values == 1 then  -- Solo "----"
-        values = {"---- (No hay jugadores)"}
-    end
-    
-    playerDropdown:SetValues(values)
-    
-    -- IMPORTANTE: Forzar que siga seleccionado "----" si no había selección previa
-    -- Solo cambia si el usuario selecciona manualmente
-    if playerDropdown.Value == "----" or playerDropdown.Value == nil or not table.find(values, playerDropdown.Value) then
-        playerDropdown:SetValue("----")
-    end
+    end)
+end
+loadPremiumKeys()
+
+-- ==================== DATES ====================
+local function parseDate(str)
+    local d, m, y, h, min = str:match("(%d%d)/(%d%d)/(%d%d%d%d) (%d%d):(%d%d)")
+    if not d then return os.time() end
+    return os.time({year = y, month = m, day = d, hour = h, min = min, sec = 0})
+end
+local START_TIME = parseDate(Config.StartDate)
+local END_TIME = parseDate(Config.EndDate)
+
+local function isPublicValid()
+    if not PublicKeyEnabled then return false end
+    return os.time() >= START_TIME and os.time() < END_TIME
 end
 
--- Actualizar al cargar
-UpdatePlayerDropdown()
+local function getExpireTimeString()
+    local now = os.time()
+    local color = (PublicKeyEnabled and isPublicValid()) and "rgb(0, 255, 150)" or "rgb(255, 80, 80)"
+    if not PublicKeyEnabled then return "<font color='rgb(255, 80, 80)'>Disabled by Admin</font>" end
+    local diff = now < START_TIME and (START_TIME - now) or now >= END_TIME and 0 or (END_TIME - now)
+    local days = math.floor(diff / 86400)
+    local h = math.floor((diff % 86400) / 3600)
+    local m = math.floor((diff % 86400 % 3600) / 60)
+    local s = diff % 60
+    return "<font color='" .. color .. "'>" .. days .. "d " .. string.format("%02d", h) .. "h " .. string.format("%02d", m) .. "m " .. string.format("%02d", s) .. "s</font>"
+end
 
--- Actualizar cuando entren/salgan jugadores
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then
-        task.wait(0.1)
-        UpdatePlayerDropdown()
+-- ==================== HWID ====================
+local function getHWID()
+    if gethwid then return gethwid() end
+    if syn and syn.get_hwid then return syn.get_hwid() end
+    if identifyexecutor then local _, id = identifyexecutor() if id then return tostring(id) end end
+    local success, hwid = pcall(function() return game:GetService("RbxAnalyticsService"):GetClientId() end)
+    if success and hwid and hwid ~= "" then return hwid end
+    return "UNKNOWN_" .. Player.UserId
+end
+local HWID = getHWID()
+
+-- ==================== AUTH FILE ====================
+local function saveAuth(key) if writefile then writefile(Config.AuthFile, key .. "|" .. HWID) end end
+local function deleteAuth() if delfile and isfile(Config.AuthFile) then delfile(Config.AuthFile) end end
+
+local function loadAuth()
+    if isfile and isfile(Config.AuthFile) and readfile then
+        local data = readfile(Config.AuthFile)
+        local key, linkedHWID = data:match("^(.-)|(.+)$")
+        if key and linkedHWID == HWID then
+            loadPremiumKeys()
+            if Config.PremiumKeys[key] and Config.PremiumKeys[key] == HWID then return key else deleteAuth() end
+        end
     end
-end)
+    return nil
+end
 
-Players.PlayerRemoving:Connect(function()
-    task.wait(0.1)
-    UpdatePlayerDropdown()
-end)
+-- ==================== LOAD SCRIPT ====================
+local function loadScript(isPremium)
+    task.wait(1)
+    local url = isPremium and PREMIUM_URL or FREEMIUM_URL
+    pcall(function()
+        loadstring(game:HttpGet(url))()
+    end)
+    task.wait(1.2)
+    if not Library.Unloaded then Library:Unload() end
+end
 
--- Botón Confirmar amigo
-ESPNameBox:AddButton("Confirm Friend (Green Name)", function()
-    local selected = playerDropdown.Value
-    
-    if not selected or selected == "----" or selected == "---- (No hay jugadores)" then
-        Library:Notify("Selecciona un jugador primero", 3)
-        return
-    end
-
-    local username = selected:match("%((.-)%)")
-    local displayname = selected:match("(.-)%s%(") or selected
-    local targetName = username or displayname
-
-    if not table.find(FriendsList, targetName) then
-        table.insert(FriendsList, targetName)
-        Library:Notify("Amigo añadido: " .. selected .. " → nombre en verde", 4)
-        -- Opcional: volver a "----" después de confirmar
-        playerDropdown:SetValue("----")
+-- ==================== PREMIUM SEQUENCE ====================
+local function premiumAuthSequence(isAutoLogin)
+    if isAutoLogin then
+        Library:Notify("Validating your premium key, please wait 5s", 6)
+        task.wait(5)
+        Library:Notify("Key validated successfully", 6)
+        task.wait(1.5)
+        Library:Notify("Auto-Login", 8)
     else
-        Library:Notify("Ya está en la lista de amigos", 3)
+        Library:Notify("Premium Accessed", 8)
     end
-end)
-
--- Botón Limpiar lista
-ESPNameBox:AddButton("Clear Friends List", function()
-    FriendsList = {}
-    Library:Notify("Lista de amigos limpiada", 4)
-    playerDropdown:SetValue("----")
-end)
-
--- ==================== ESP BOX (CUADRADO 2D - SIN TRACER) ====================
-local ESP_Box_Enabled = false
-local ESP_Box_Settings = {
-    BoxColor = Color3.fromRGB(255, 255, 255),
-    FriendColor = Color3.fromRGB(0, 255, 0),
-    Thickness = 2,
-    TeamCheck = false
-}
-
-local FriendsList = {}  -- Usa la misma lista de amigos que en ESP Name
-local ESPBoxes = {}     -- [player] = { box = Drawing.Square }
-local Camera = workspace.CurrentCamera
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
--- Crear el box para cada jugador
-local function CreateESPBox(plr)
-    if plr == LocalPlayer or ESPBoxes[plr] then return end
-
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = ESP_Box_Settings.BoxColor
-    box.Thickness = ESP_Box_Settings.Thickness
-    box.Filled = false
-    box.Transparency = 1
-
-    ESPBoxes[plr] = { box = box }
 end
 
--- Limpiar al salir del servidor
-Players.PlayerRemoving:Connect(function(plr)
-    if ESPBoxes[plr] then
-        ESPBoxes[plr].box:Remove()
-        ESPBoxes[plr] = nil
+-- ==================== UI ====================
+pcall(function()
+    local AuthWindow = Library:CreateWindow({
+        Title = " И Ξ Ｘ",
+        Icon = 94564569718126,
+        Footer = "SYSTEM AUTH KEY - NYX @xSh4dow",
+        AutoShow = true,
+        ShowCustomCursor = false,
+        NotifySide = "Right"
+    })
+
+    -- Timer
+    task.spawn(function()
+        local startTime = tick()
+        repeat
+            local remaining = math.max(0, 60 - math.floor(tick() - startTime))
+            if remaining > 0 and not Library.Unloaded then
+                pcall(function() AuthWindow:SetFooter("Closing in " .. remaining .. " seconds...") end)
+            end
+            task.wait(1)
+        until Library.Unloaded or remaining <= 0
+        if not Library.Unloaded then
+            sendAdvancedEmbed("⏰ Time Expired", "No autenticación en 60s", 16711680, "None", "N/A")
+            Library:Unload()
+        end
+    end)
+
+    -- Owner Welcome
+    if HWID == OWNER_HWID then
+        sendAdvancedEmbed("👑 Owner Login", "El owner ha iniciado sesión", 16755200, "Owner", "Owner HWID")
+        Library:Notify("Welcome back, Owner!", 10)
     end
+
+    local AuthTab = AuthWindow:AddTab("Auth", "key")
+    local AuthBox = AuthTab:AddLeftGroupbox("Key Verification", "lock")
+
+    local ActiveKeyLabel = AuthBox:AddLabel("Active Key: Loading...")
+    local ExpireLabel = AuthBox:AddLabel("Key Expires: Calculating...")
+
+    RunService.Heartbeat:Connect(function()
+        if Library.Unloaded then return end
+        local keyText = PublicKeyEnabled and Config.PublicKeyRaw or "Disabled by Admin"
+        local keyColor = PublicKeyEnabled and "rgb(0, 255, 150)" or "rgb(255, 80, 80)"
+        ActiveKeyLabel:SetText("Active Key: <font color='" .. keyColor .. "'>" .. keyText .. "</font>")
+        ExpireLabel:SetText("Key Expires: " .. getExpireTimeString())
+        if tick() % 30 < 1 then loadPremiumKeys() end
+    end)
+
+    local KeyInput = AuthBox:AddInput("KeyInput", {Text = "Enter Key", Placeholder = "Enter your key here..."})
+
+    AuthBox:AddButton("Verify & Load Script", function()
+        local input = KeyInput.Value:match("^%s*(.-)%s*$")
+        if input == "" then
+            Library:Notify("Please enter a key", 4)
+            sendAdvancedEmbed("⚠️ Empty Key Field", "Usuario dejó el campo vacío", 16776960, "None", "N/A")
+            return
+        end
+
+        if BannedHWIDs[HWID] then
+            Library:Notify("Your HWID is banned", 10)
+            sendAdvancedEmbed("❌ Banned HWID", "Intento de acceso con HWID baneado", 16711680, "Banned", "N/A")
+            return
+        end
+
+        loadPremiumKeys()
+
+        if Config.PremiumKeys[input] then
+            if Config.PremiumKeys[input] == HWID then
+                saveAuth(input)
+                getgenv().NYX_Level = "Premium"
+                premiumAuthSequence(false)
+                sendAdvancedEmbed("🔐 New Login Detected", "Premium access granted", 65280, "Premium", input, {{name = "🔑 Key Used", value = "`"..input.."`", inline = false}})
+                task.wait(2)
+                loadScript(true)
+            else
+                Library:Notify("Key belongs to another HWID. Access denied", 10)
+                sendAdvancedEmbed("🚫 Key Shared Detected", "Usuario intentó usar key premium de otro HWID (compartida)", 16711680, "Invalid", input, {
+                    {name = "⚠️ Key Attempted", value = "`"..input.."`", inline = false},
+                    {name = "👤 Registered HWID", value = "`"..Config.PremiumKeys[input].."`", inline = false},
+                    {name = "👤 Attempting HWID", value = "`"..HWID.."`", inline = false}
+                })
+            end
+            return
+        end
+
+        local clean = input:gsub("[%s%-%.]", ""):upper()
+        if clean == Config.PublicKeyClean and isPublicValid() then
+            getgenv().NYX_Level = "Freemium"
+            sendAdvancedEmbed("🔐 New Login Detected", "Freemium access with public key", 3447003, "Freemium", "Public")
+            Library:Notify("Freemium activated", 8)
+            task.wait(1.5)
+            loadScript(false)
+            return
+        end
+
+        Library:Notify("Invalid or expired key", 8)
+        sendAdvancedEmbed("❌ Invalid Key", "Key inválida, expirada o no existente", 16711680, "None", input, {{name = "❌ Key Entered", value = "`"..input.."`", inline = false}})
+    end)
+
+    AuthBox:AddButton("Close Manually", function()
+        sendAdvancedEmbed("🔴 Manual Close", "Cierre manual de la UI", 10181046, getgenv().NYX_Level or "None", "N/A")
+        Library:Unload()
+    end)
+
+    AuthBox:AddButton("Join Discord", function()
+        pcall(function()
+            request({Url = "http://127.0.0.1:6463/rpc?v=1", Method = "POST", Headers = {["Content-Type"] = "application/json", ["Origin"] = "https://discord.com"},
+                Body = HttpService:JSONEncode({cmd = "INVITE_BROWSER", args = {code = DISCORD_INVITE}, nonce = HttpService:GenerateGUID(false)})})
+        end)
+        setclipboard("https://discord.gg/" .. DISCORD_INVITE)
+        Library:Notify("Discord invite copied / opening", 6)
+        sendAdvancedEmbed("📩 Discord Join", "Usuario intentó unirse al servidor", 3447003, getgenv().NYX_Level or "None", "N/A")
+    end)
+
+    local HWIDBox = AuthTab:AddRightGroupbox("HWID Information", "fingerprint")
+    HWIDBox:AddButton("Copy my HWID", function()
+        setclipboard(HWID)
+        Library:Notify("HWID copied to clipboard", 8)
+        sendAdvancedEmbed("📋 HWID Copied", "Usuario copió su HWID", 3447003, getgenv().NYX_Level or "None", "N/A")
+    end)
+    HWIDBox:AddLabel("Your current HWID:")
+    HWIDBox:AddLabel(HWID)
+    HWIDBox:AddDivider()
+    HWIDBox:AddLabel("<font color='rgb(0, 255, 150)'><b>How to get Premium?</b></font>")
+    HWIDBox:AddLabel("1. Copy your HWID")
+    HWIDBox:AddLabel("2. Join Discord")
+    HWIDBox:AddLabel("3. Send your HWID")
+    HWIDBox:AddLabel("4. Buy and enjoy")
+
+    -- ==================== TAB SUGGEST ====================
+    local SuggestTab = AuthWindow:AddTab("Suggest", "lightbulb")
+    local SuggestBox = SuggestTab:AddLeftGroupbox("Send Suggestion", "message")
+
+    local SuggestInput = SuggestBox:AddInput("SuggestText", {Text = "Write your suggestion", Placeholder = "Minimum 20 characters, maximum 300..."})
+
+    SuggestBox:AddButton("Send Suggestion", function()
+        local text = SuggestInput.Value:match("^%s*(.-)%s*$")
+        local length = #text
+
+        if length < 20 then
+            Library:Notify("Suggestion too short (min 20 characters)", 6)
+            return
+        end
+
+        if length > 300 then
+            Library:Notify("Suggestion too long (max 300 characters)", 6)
+            return
+        end
+
+        sendAdvancedEmbed("💡 New Suggestion", "Usuario envió una sugerencia", 16776960, getgenv().NYX_Level or "None", "N/A", {
+            {name = "📝 Suggestion", value = text, inline = false}
+        })
+
+        Library:Notify("Suggestion sent successfully!", 8)
+        SuggestInput:SetValue("")
+    end)
+
+    SuggestBox:AddLabel("Min: 20 characters | Max: 300 characters")
 end)
 
--- Crear para jugadores actuales y nuevos
-for _, plr in Players:GetPlayers() do
-    if plr ~= LocalPlayer then CreateESPBox(plr) end
+-- ==================== AUTO-LOGIN ====================
+local savedKey = loadAuth()
+if savedKey and not BannedHWIDs[HWID] then
+    getgenv().NYX_Level = "Premium"
+    premiumAuthSequence(true)
+    sendAdvancedEmbed("🔐 New Login Detected", "Premium Auto-Login", 65280, "Premium", savedKey, {{name = "🔄 Type", value = "Auto-Login", inline = true}})
+    task.wait(3)
+    loadScript(true)
 end
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then CreateESPBox(plr) end
-end)
-
--- Bucle principal
-RunService.RenderStepped:Connect(function()
-    if not ESP_Box_Enabled then
-        for _, data in pairs(ESPBoxes) do
-            data.box.Visible = false
-        end
-        return
-    end
-
-    for plr, drawings in pairs(ESPBoxes) do
-        local char = plr.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local head = char and char:FindFirstChild("Head")
-        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-
-        if not char or not hrp or not head or not humanoid or humanoid.Health <= 0 then
-            drawings.box.Visible = false
-            continue
-        end
-
-        -- Team Check
-        if ESP_Box_Settings.TeamCheck and plr.Team == LocalPlayer.Team then
-            drawings.box.Visible = false
-            continue
-        end
-
-        -- Color amigo
-        local isFriend = table.find(FriendsList, plr.Name) or table.find(FriendsList, plr.DisplayName)
-        drawings.box.Color = isFriend and ESP_Box_Settings.FriendColor or ESP_Box_Settings.BoxColor
-
-        -- Posiciones
-        local headPos = head.Position + Vector3.new(0, 0.5, 0)
-        local legPos = hrp.Position - Vector3.new(0, 3, 0)
-
-        local headScreen, headOnScreen = Camera:WorldToViewportPoint(headPos)
-        local legScreen, legOnScreen = Camera:WorldToViewportPoint(legPos)
-        local rootScreen, rootOnScreen = Camera:WorldToViewportPoint(hrp.Position)
-
-        if headOnScreen or legOnScreen or rootOnScreen then
-            local boxHeight = math.abs(headScreen.Y - legScreen.Y)
-            local boxWidth = boxHeight / 2
-
-            local boxX = rootScreen.X - boxWidth / 2
-            local boxY = headScreen.Y
-
-            drawings.box.Size = Vector2.new(boxWidth, boxHeight)
-            drawings.box.Position = Vector2.new(boxX, boxY)
-            drawings.box.Thickness = ESP_Box_Settings.Thickness
-            drawings.box.Visible = true
-        else
-            drawings.box.Visible = false
-        end
-    end
-end)
-
--- ==================== UI DEL ESP BOX ====================
-local ESPBoxGroup = Tabs.Visuals:AddRightGroupbox("ESP Box", "square")
-
-ESPBoxGroup:AddToggle("ESPBoxEnabled", {
-    Text = "ESP Box",
-    Default = false,
-    Tooltip = "Cuadrado 2D alrededor de jugadores",
-    Callback = function(state)
-        ESP_Box_Enabled = state
-        Library:Notify(state and "ESP Box → ON" or "ESP Box → OFF", 4)
-    end
-}):AddColorPicker("BoxColor", {
-    Default = Color3.fromRGB(255, 255, 255),
-    Title = "Color Normal",
-    Callback = function(color)
-        ESP_Box_Settings.BoxColor = color
-    end
-})
-
-ESPBoxGroup:AddSlider("BoxThickness", {
-    Text = "Thickness",
-    Min = 0,
-    Max = 6,
-    Default = 0,
-    Rounding = 1,
-    Callback = function(v)
-        ESP_Box_Settings.Thickness = v
-    end
-})
-
-ESPBoxGroup:AddToggle("BoxTeamCheck", {
-    Text = "Team Check",
-    Default = false,
-    Callback = function(state)
-        ESP_Box_Settings.TeamCheck = state
-    end
-})
-
-
--- ==================== PLAYER TAB - ANTI AFK, FULLBRIGHT, LOW GRAPHICS ====================
-local CharacterBox = Tabs.Player:AddLeftGroupbox("Utilities", "wrench")
-
-local Lighting = game:GetService("Lighting")
-local OldLighting = {
-    Brightness = Lighting.Brightness,
-    GlobalShadows = Lighting.GlobalShadows,
-    FogEnd = Lighting.FogEnd,
-    FogStart = Lighting.FogStart,
-    ClockTime = Lighting.ClockTime,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient
-}
-local FullbrightConnection
-
-CharacterBox:AddToggle("Fullbright", {
-    Text = "Fullbright",
-    Default = false,
-    Callback = function(state)
-        if state then
-            Lighting.Brightness = 3
-            Lighting.GlobalShadows = false
-            Lighting.FogEnd = 100000
-            Lighting.FogStart = 0
-            Lighting.ClockTime = 12
-            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-            for _, v in pairs(Lighting:GetChildren()) do
-                if v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("Atmosphere") then
-                    v.Enabled = false
-                end
-            end
-            FullbrightConnection = Lighting.ChildAdded:Connect(function(child)
-                if state and (child:IsA("BloomEffect") or child:IsA("ColorCorrectionEffect") or child:IsA("SunRaysEffect") or child:IsA("Atmosphere")) then
-                    child.Enabled = false
-                end
-            end)
-            Library:Notify("Fullbright Activado", 3)
-        else
-            Lighting.Brightness = OldLighting.Brightness
-            Lighting.GlobalShadows = OldLighting.GlobalShadows
-            Lighting.FogEnd = OldLighting.FogEnd
-            Lighting.FogStart = OldLighting.FogStart
-            Lighting.ClockTime = OldLighting.ClockTime
-            Lighting.Ambient = OldLighting.Ambient
-            Lighting.OutdoorAmbient = OldLighting.OutdoorAmbient
-            for _, v in pairs(Lighting:GetChildren()) do
-                if v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") then
-                    v.Enabled = true
-                end
-            end
-            if FullbrightConnection then
-                FullbrightConnection:Disconnect()
-                FullbrightConnection = nil
-            end
-            Library:Notify("Fullbright Desactivado", 3)
-        end
-    end
-})
-
-local AntiAFKConnection
-CharacterBox:AddToggle("Anti-AFK", {
-    Text = "Anti-AFK",
-    Default = false,
-    Callback = function(state)
-        if state then
-            AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
-                game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-            end)
-            Library:Notify("Anti-AFK Activado", 3)
-        else
-            if AntiAFKConnection then
-                AntiAFKConnection:Disconnect()
-                AntiAFKConnection = nil
-            end
-            Library:Notify("Anti-AFK Desactivado", 3)
-        end
-    end
-})
-
-local function UltraLowGraphics()
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    game.Lighting.GlobalShadows = false
-    game.Lighting.FogEnd = 9e9
-    game.Lighting.Brightness = 1
-    if game.Lighting:FindFirstChild("Atmosphere") then
-        game.Lighting.Atmosphere:Destroy()
-    end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke")
-        or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam")
-        or obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
-            obj:Destroy()
-        end
-    end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Plastic
-            obj.Color = Color3.new(0.5, 0.5, 0.5)
-            if obj:IsA("MeshPart") then
-                obj.TextureID = ""
-                obj.Material = Enum.Material.SmoothPlastic
-            end
-        end
-        if obj:IsA("SpecialMesh") or obj:IsA("BlockMesh") or obj:IsA("CylinderMesh") then
-            obj.TextureId = ""
-        end
-    end
-    for _, effect in ipairs(game.Lighting:GetChildren()) do
-        if effect:IsA("PostEffect") then
-            effect.Enabled = false
-        end
-    end
-    Library:Notify("Ultra Low Graphics ACTIVADO (Texturas eliminadas +200 FPS)", 5)
-end
-
-CharacterBox:AddToggle("UltraLowGFX", {
-    Text = "Low Graphic",
-    Default = false,
-    Tooltip = "Elimina TODAS las texturas de Parts/Modelos + partículas + sombras",
-    Callback = function(state)
-        if state then
-            UltraLowGraphics()
-        else
-            Library:Notify("Reinicia el juego para restaurar texturas", 4)
-        end
-    end
-})
-
-
--- ==================== SETTINGS ====================
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetFolder("NyxExotic")
-ThemeManager:SetFolder("NyxExotic")
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
-
-Tabs.Settings:AddLeftGroupbox("Menu"):AddToggle("CustomCursor", {
-    Text = "Custom Cursor",
-    Default = true,
-    Callback = function(v) Library.ShowCustomCursor = v end
-})
-Tabs.Settings:AddLeftGroupbox("Menu"):AddLabel("Menu Bind: M (Fixed)")
-Tabs.Settings:AddLeftGroupbox("Menu"):AddButton("Unload", function() Library:Unload() end)
-
-game:GetService("UserInputService").InputBegan:Connect(function(i, gp)
-    if not gp and i.KeyCode == Enum.KeyCode.M then Library:Toggle() end
-end)
-
-Library:Notify("Nyx Exotic, [Open Menu] (M)", 6)
-SaveManager:LoadAutoloadConfig()
