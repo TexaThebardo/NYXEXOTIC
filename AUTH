@@ -1,37 +1,84 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
+
+local Player = game.Players.LocalPlayer
+
 getgenv().NYX_Authorized = getgenv().NYX_Authorized or false
 getgenv().NYX_Key = getgenv().NYX_Key or ""
 getgenv().NYX_HWID = getgenv().NYX_HWID or nil
 getgenv().NYX_Level = getgenv().NYX_Level or "None"
--- ==================== CONFIGURACIÓN ====================
-local DISCORD_WEBHOOK = "https://ptb.discord.com/api/webhooks/1451687966534537390/d3etUreVsXj9u7KBFyvKlxVszX9sC_m_lib5d2ceGT8ol9tqc_bFLIIElfIUDd_lZ_hW"
-local OWNER_HWID = "37343535303063616462303063613562306433626539633632656632626130353134363632333863386335666532663738663338363364386535636631353361" -- <<< TU HWID REAL AQUÍ
-local DISCORD_INVITE = "F3SDzkZa6U" -- Código de invitación
--- ==================== TABLA USUARIOS ACTIVOS ====================
-local ActiveUsers = {}
--- ==================== WEBHOOK ====================
-local function sendWebhook(embed)
+
+-- ==================== CONFIGURATION ====================
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1453113715200102531/TRzVhwOYlF921oHphBfNIKP0LCwxcwLBfRCD0D1L00fg07Sofj6eSv-4jgt-xSdWHj6O"
+local OWNER_HWID = "37343535303063616462303063613562306433626539633632656632626130353134363632333863386335666532663738663338363364386535636631353361"
+local DISCORD_INVITE = "F3SDzkZa6U"
+
+-- ==================== DETECTAR EXECUTOR ====================
+local function getExecutorName()
+    if identifyexecutor then
+        local name, _ = identifyexecutor()
+        return name or "Unknown"
+    elseif getexecutorname then
+        return getexecutorname()
+    elseif syn then
+        return "Synapse X"
+    elseif KRNL_LOADED then
+        return "Krnl"
+    elseif fluxus then
+        return "Fluxus"
+    elseif gethwid then
+        return "Solara / Codex"
+    end
+    return "Unknown Executor"
+end
+
+-- ==================== FECHA FORMATEADA ====================
+local function getFormattedDate()
+    return os.date("%d/%m/%Y • %H:%M:%S")
+end
+
+-- ==================== EMBED AVANZADO ====================
+local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed, extraFields)
+    local embed = {
+        title = title,
+        description = description,
+        color = color,
+        fields = {
+            {name = "👤 Usuario", value = "**Display:** @" .. Player.DisplayName .. "\n**Username:** " .. Player.Name .. "\n**ID:** " .. Player.UserId, inline = false},
+            {name = "🛡️ Nivel de Acceso", value = (accessLevel == "Premium" and "🔑" or accessLevel == "Freemium" and "🔓" or accessLevel == "Owner" and "👑" or "❌") .. " **" .. accessLevel .. "**", inline = true},
+            {name = "⚙️ Executor", value = "**" .. getExecutorName() .. "**", inline = true},
+            {name = "🧬 HWID", value = "```HIDDEN```", inline = false},
+            {name = "⏰ Fecha y Hora", value = getFormattedDate(), inline = false}
+        },
+        footer = {text = "NYX Exotic • Security System"},
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+    }
+
+    if extraFields then
+        for _, f in pairs(extraFields) do table.insert(embed.fields, f) end
+    end
+
+    local body = HttpService:JSONEncode({embeds = {embed}})
+
     spawn(function()
         pcall(function()
-            syn.request({
-                Url = DISCORD_WEBHOOK,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode({embeds = {embed}})
-            })
+            local req = syn and syn.request or request or http_request or http.request
+            if req then
+                req({
+                    Url = DISCORD_WEBHOOK,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = body
+                })
+            end
         end)
     end)
 end
+
 -- ==================== CONFIG ====================
-local DEFAULT_CONFIG = {
-    PublicKeyRaw = "NewUpdateFix!",
-    StartDate = "23/12/2025 00:00",
-    EndDate = "26/12/2025 23:59",
-}
 local Config = {
-    PremiumKeys = {},  -- Se cargará dinámicamente desde el repo JSON
+    PremiumKeys = {},
     PublicKeyRaw = "NewUpdateFix!",
     PublicKeyClean = "",
     StartDate = "23/12/2025 00:00",
@@ -42,29 +89,26 @@ local Config = {
     PremiumKeysURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/PremiumKeys.json",
 }
 Config.PublicKeyClean = Config.PublicKeyRaw:gsub("[%s%-%.]", ""):upper()
+
 local FREEMIUM_URL = Config.FreemiumURL
 local PREMIUM_URL = Config.PremiumURL
 local PublicKeyEnabled = true
 local BannedHWIDs = {}
+local ActiveUsers = {}
 
--- ==================== CARGAR PREMIUM KEYS DESDE REPO ====================
+-- ==================== LOAD PREMIUM KEYS ====================
 local function loadPremiumKeys()
     pcall(function()
-        local success, response = pcall(function()
-            return game:HttpGet(Config.PremiumKeysURL)
-        end)
+        local success, response = pcall(game.HttpGet, game, Config.PremiumKeysURL)
         if success and response then
             local jsonData = HttpService:JSONDecode(response)
-            if typeof(jsonData) == "table" then
-                Config.PremiumKeys = jsonData  -- Espera formato: {"key1": "hwid1", "key2": "hwid2", ...}
-            end
+            if typeof(jsonData) == "table" then Config.PremiumKeys = jsonData end
         end
     end)
 end
+loadPremiumKeys()
 
-loadPremiumKeys()  -- Carga inicial
-
--- ==================== FECHAS ====================
+-- ==================== DATES ====================
 local function parseDate(str)
     local d, m, y, h, min = str:match("(%d%d)/(%d%d)/(%d%d%d%d) (%d%d):(%d%d)")
     if not d then return os.time() end
@@ -72,15 +116,16 @@ local function parseDate(str)
 end
 local START_TIME = parseDate(Config.StartDate)
 local END_TIME = parseDate(Config.EndDate)
+
 local function isPublicValid()
     if not PublicKeyEnabled then return false end
-    local now = os.time()
-    return now >= START_TIME and now < END_TIME
+    return os.time() >= START_TIME and os.time() < END_TIME
 end
+
 local function getExpireTimeString()
     local now = os.time()
     local color = (PublicKeyEnabled and isPublicValid()) and "rgb(0, 255, 150)" or "rgb(255, 80, 80)"
-    if not PublicKeyEnabled then return "<font color='rgb(255, 80, 80)'>Desactivada por Admin</font>" end
+    if not PublicKeyEnabled then return "<font color='rgb(255, 80, 80)'>Disabled by Admin</font>" end
     local diff = now < START_TIME and (START_TIME - now) or now >= END_TIME and 0 or (END_TIME - now)
     local days = math.floor(diff / 86400)
     local h = math.floor((diff % 86400) / 3600)
@@ -88,293 +133,224 @@ local function getExpireTimeString()
     local s = diff % 60
     return "<font color='" .. color .. "'>" .. days .. "d " .. string.format("%02d", h) .. "h " .. string.format("%02d", m) .. "m " .. string.format("%02d", s) .. "s</font>"
 end
+
 -- ==================== HWID ====================
 local function getHWID()
     if gethwid then return gethwid() end
     if syn and syn.get_hwid then return syn.get_hwid() end
     if identifyexecutor then local _, id = identifyexecutor() if id then return tostring(id) end end
-    if getexecutorname then return getexecutorname() end
     local success, hwid = pcall(function() return game:GetService("RbxAnalyticsService"):GetClientId() end)
     if success and hwid and hwid ~= "" then return hwid end
-    return "UNKNOWN_" .. game.Players.LocalPlayer.UserId
+    return "UNKNOWN_" .. Player.UserId
 end
 local HWID = getHWID()
+
 -- ==================== AUTH FILE ====================
-local function saveAuth(key)
-    if writefile then writefile(Config.AuthFile, key .. "|" .. HWID) end
-end
+local function saveAuth(key) if writefile then writefile(Config.AuthFile, key .. "|" .. HWID) end end
+local function deleteAuth() if delfile and isfile(Config.AuthFile) then delfile(Config.AuthFile) end end
+
 local function loadAuth()
     if isfile and isfile(Config.AuthFile) and readfile then
         local data = readfile(Config.AuthFile)
         local key, linkedHWID = data:match("^(.-)|(.+)$")
-        if key and linkedHWID == HWID then 
-            -- Validar que la key guardada siga siendo válida en el repo actual
-            loadPremiumKeys()  -- Recarga para estar actualizado
-            if Config.PremiumKeys[key] and Config.PremiumKeys[key] == HWID then
-                return key
-            else
-                deleteAuth()  -- Si ya no es válida, borra el archivo
-                return nil
-            end
+        if key and linkedHWID == HWID then
+            loadPremiumKeys()
+            if Config.PremiumKeys[key] and Config.PremiumKeys[key] == HWID then return key else deleteAuth() end
         end
     end
     return nil
 end
-local function deleteAuth()
-    if delfile and isfile(Config.AuthFile) then delfile(Config.AuthFile) end
-end
--- ==================== UNLOAD ====================
-Library:OnUnload(function()
-    getgenv().NYX_Authorized = nil
-    getgenv().NYX_Key = nil
-    getgenv().NYX_HWID = nil
-    getgenv().NYX_Level = nil
-    ActiveUsers[HWID] = nil
-end)
--- ==================== CARGAR SCRIPT ====================
+
+-- ==================== LOAD SCRIPT ====================
 local function loadScript(isPremium)
     task.wait(1)
+    local url = isPremium and PREMIUM_URL or FREEMIUM_URL
     pcall(function()
-        loadstring(game:HttpGet(isPremium and PREMIUM_URL or FREEMIUM_URL))()
+        loadstring(game:HttpGet(url))()
     end)
-    task.spawn(function()
-        task.wait(0.8)
-        Library:Unload()
-    end)
+    task.wait(1.2)
+    if not Library.Unloaded then Library:Unload() end
 end
--- ==================== INTERFAZ ====================
-local AuthWindow = Library:CreateWindow({
-    Title = " И Ξ Ｘ",
-    Icon = 94564569718126,
-    Footer = "SYSTEM AUTH KEY - NYX @xSh4dow",
-    AutoShow = true,
-    ShowCustomCursor = false,
-    NotifySide = "Right"
-})
-task.spawn(function()
-    for i = 60, 0, -1 do
-        if not Library.Unloaded then
-            AuthWindow:SetFooter("Cerrando en " .. i .. " segundos...")
-        else
-            break
-        end
-        task.wait(1)
-    end
-    if not Library.Unloaded then
-        sendWebhook({title = "⏰ Tiempo Agotado", description = "No autenticó en 60s", color = 16711680, fields = {{name = "HWID", value = "`"..HWID.."`"}}})
-        Library:Unload()
-    end
-end)
-local AuthTab = AuthWindow:AddTab("Auth", "key")
-local AuthBox = AuthTab:AddLeftGroupbox("Key Verification", "lock")
-local ActiveKeyLabel = AuthBox:AddLabel("Key Activa: Cargando...")
-local ExpireLabel = AuthBox:AddLabel("Key Expire: Calculando...")
-RunService.Heartbeat:Connect(function()
-    if Library.Unloaded then return end
-    local keyText = PublicKeyEnabled and Config.PublicKeyRaw or "Desactivada por Admin"
-    local keyColor = PublicKeyEnabled and "rgb(0, 255, 150)" or "rgb(255, 80, 80)"
-    ActiveKeyLabel:SetText("Key Activa: <font color='" .. keyColor .. "'>" .. keyText .. "</font>")
-    ExpireLabel:SetText("Key Expire: " .. getExpireTimeString())
-    
-    -- Recarga periódica de keys premium para mantener actualizado (cada ~30s aprox)
-    if tick() % 30 < 1 then
-        loadPremiumKeys()
-    end
-end)
-local KeyInput = AuthBox:AddInput("KeyInput", {Text = "Enter Key", Placeholder = "Ingresa tu clave aquí..."})
-AuthBox:AddButton("Verify & Load Script", function()
-    local input = KeyInput.Value:match("^%s*(.-)%s*$")
-    if input == "" then
-        Library:Notify("⚠️ Ingresa una key", 4)
-        return
-    end
-    if BannedHWIDs[HWID] then
-        Library:Notify("❌ HWID baneado", 10)
-        return
-    end
-    
-    loadPremiumKeys()  -- Asegura datos frescos antes de verificar
-    
-    if Config.PremiumKeys[input] then
-        if Config.PremiumKeys[input] == HWID then
-            saveAuth(input)
-            getgenv().NYX_Level = "Premium"
-            ActiveUsers[HWID] = {Level = "Premium", Key = input, Timestamp = os.time()}
-            sendWebhook({title = "Premium Autenticado", description = "Acceso concedido", color = 65280, fields = {{name = "Key", value = "`"..input.."`"}, {name = "HWID", value = "`"..HWID.."`"}}})
-            Library:Notify("Premium activado", 10)
-            task.wait(1.5)
-            loadScript(true)
-        else
-            Library:Notify("HWID no coincide", 8)
-        end
-        return
-    end
-    local clean = input:gsub("[%s%-%.]", ""):upper()
-    if clean == Config.PublicKeyClean and isPublicValid() then
-        getgenv().NYX_Level = "Freemium"
-        ActiveUsers[HWID] = {Level = "Freemium", Key = "Public", Timestamp = os.time()}
-        sendWebhook({title = "Freemium Autenticado", description = "Key pública", color = 3447003, fields = {{name = "HWID", value = "`"..HWID.."`"}}})
-        Library:Notify("Freemium activado", 8)
+
+-- ==================== PREMIUM SEQUENCE ====================
+local function premiumAuthSequence(isAutoLogin)
+    if isAutoLogin then
+        Library:Notify("Validating your premium key, please wait 5s", 6)
+        task.wait(5)
+        Library:Notify("Key validated successfully", 6)
         task.wait(1.5)
-        loadScript(false)
-        return
-    end
-    Library:Notify("Key inválida", 6)
-end)
-AuthBox:AddButton("Cerrar Manualmente", function()
-    sendWebhook({title = "Cierre manual", description = "Usuario cerró", color = 10181046, fields = {{name = "HWID", value = "`"..HWID.."`"}}})
-    Library:Unload()
-end)
-AuthBox:AddButton("Join Discord", function()
-    local success = pcall(function()
-        request({
-            Url = "http://127.0.0.1:6463/rpc?v=1",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json", ["Origin"] = "https://discord.com"},
-            Body = HttpService:JSONEncode({
-                cmd = "INVITE_BROWSER",
-                args = {code = DISCORD_INVITE},
-                nonce = HttpService:GenerateGUID(false)
-            })
-        })
-    end)
-    if success then
-        Library:Notify("Abriendo Discord...", 4)
+        Library:Notify("Auto-Login", 8)
     else
-        setclipboard("https://discord.gg/" .. DISCORD_INVITE)
-        Library:Notify("Link copiado al portapapeles", 6)
+        Library:Notify("Premium Accessed", 8)
     end
-end)
--- ==================== GROUPBOX HWID CON TUTORIAL ====================
-local HWIDBox = AuthTab:AddRightGroupbox("Información HWID", "fingerprint")
-HWIDBox:AddButton("Copiar mi HWID", function()
-    setclipboard(HWID)
-    Library:Notify("HWID copiado al portapapeles", 8)
-end)
-HWIDBox:AddLabel("Tu HWID actual:")
-HWIDBox:AddLabel(HWID)
-HWIDBox:AddDivider()
-HWIDBox:AddLabel("<font color='rgb(0, 255, 150)'><b>¿Cómo obtener Premium?</b></font>")
-HWIDBox:AddLabel("1. Copia tu HWID (botón arriba)")
-HWIDBox:AddLabel("2. Únete al Discord")
-HWIDBox:AddLabel("3. Envía tu HWID al owner")
-HWIDBox:AddLabel("4. Compra tu key y disfruta 🔥")
--- ==================== TAB ADMIN COMPLETO (SOLO OWNER) ====================
-if HWID == OWNER_HWID then
-    local AdminTab = AuthWindow:AddTab("Admin", "shield")
-    -- Usuarios activos
-    local ActiveBox = AdminTab:AddLeftGroupbox("Usuarios Activos", "users")
-    local ActiveLabel = ActiveBox:AddLabel("Cargando...")
+end
+
+-- ==================== UI ====================
+pcall(function()
+    local AuthWindow = Library:CreateWindow({
+        Title = " И Ξ Ｘ",
+        Icon = 94564569718126,
+        Footer = "SYSTEM AUTH KEY - NYX @xSh4dow",
+        AutoShow = true,
+        ShowCustomCursor = false,
+        NotifySide = "Right"
+    })
+
+    -- Timer
+    task.spawn(function()
+        local startTime = tick()
+        repeat
+            local remaining = math.max(0, 60 - math.floor(tick() - startTime))
+            if remaining > 0 and not Library.Unloaded then
+                pcall(function() AuthWindow:SetFooter("Closing in " .. remaining .. " seconds...") end)
+            end
+            task.wait(1)
+        until Library.Unloaded or remaining <= 0
+        if not Library.Unloaded then
+            sendAdvancedEmbed("⏰ Time Expired", "No autenticación en 60s", 16711680, "None", "N/A")
+            Library:Unload()
+        end
+    end)
+
+    -- Owner Welcome
+    if HWID == OWNER_HWID then
+        sendAdvancedEmbed("👑 Owner Login", "El owner ha iniciado sesión", 16755200, "Owner", "Owner HWID")
+        Library:Notify("Welcome back, Owner!", 10)
+    end
+
+    local AuthTab = AuthWindow:AddTab("Auth", "key")
+    local AuthBox = AuthTab:AddLeftGroupbox("Key Verification", "lock")
+
+    local ActiveKeyLabel = AuthBox:AddLabel("Active Key: Loading...")
+    local ExpireLabel = AuthBox:AddLabel("Key Expires: Calculating...")
+
     RunService.Heartbeat:Connect(function()
         if Library.Unloaded then return end
-        local count = 0
-        local text = ""
-        for hwid, data in pairs(ActiveUsers) do
-            count = count + 1
-            local mins = math.floor((os.time() - data.Timestamp) / 60)
-            text = text .. "`"..hwid.."` → "..data.Level.." ("..data.Key..") - "..mins.."min\n"
-        end
-        ActiveLabel:SetText(count == 0 and "Ningún usuario activo" or "Activos: "..count.."\n"..text)
+        local keyText = PublicKeyEnabled and Config.PublicKeyRaw or "Disabled by Admin"
+        local keyColor = PublicKeyEnabled and "rgb(0, 255, 150)" or "rgb(255, 80, 80)"
+        ActiveKeyLabel:SetText("Active Key: <font color='" .. keyColor .. "'>" .. keyText .. "</font>")
+        ExpireLabel:SetText("Key Expires: " .. getExpireTimeString())
+        if tick() % 30 < 1 then loadPremiumKeys() end
     end)
-    -- Control Key Pública
-    local ControlBox = AdminTab:AddLeftGroupbox("Control Key Pública", "key")
-    ControlBox:AddToggle("PublicKeyToggle", {Text = "Key Pública Activada", Default = true, Callback = function(v)
-        PublicKeyEnabled = v
-        sendWebhook({title = "Admin Action", description = v and "Key pública activada" or "Key pública desactivada", color = v and 65280 or 16711680})
-    end})
-    ControlBox:AddInput("PublicKeyInput", {Text = "Cambiar Key Pública", Placeholder = Config.PublicKeyRaw, Callback = function(v)
-        if v ~= "" then
-            Config.PublicKeyRaw = v
-            Config.PublicKeyClean = v:gsub("[%s%-%.]", ""):upper()
-            sendWebhook({title = "Admin Action", description = "Key pública cambiada a: "..v, color = 3447003})
+
+    local KeyInput = AuthBox:AddInput("KeyInput", {Text = "Enter Key", Placeholder = "Enter your key here..."})
+
+    AuthBox:AddButton("Verify & Load Script", function()
+        local input = KeyInput.Value:match("^%s*(.-)%s*$")
+        if input == "" then
+            Library:Notify("Please enter a key", 4)
+            sendAdvancedEmbed("⚠️ Empty Key Field", "Usuario dejó el campo vacío", 16776960, "None", "N/A")
+            return
         end
-    end})
-    ControlBox:AddInput("StartDateInput", {Text = "Fecha Inicio", Placeholder = Config.StartDate, Callback = function(v)
-        if v ~= "" then Config.StartDate = v START_TIME = parseDate(v) end
-    end})
-    ControlBox:AddInput("EndDateInput", {Text = "Fecha Fin", Placeholder = Config.EndDate, Callback = function(v)
-        if v ~= "" then Config.EndDate = v END_TIME = parseDate(v) end
-    end})
-    -- Gestión Premium Keys (solo visual, ya que se gestionan en el repo GitHub)
-    local PremiumBox = AdminTab:AddLeftGroupbox("Gestión Keys Premium (Repo)", "premium")
-    PremiumBox:AddLabel("Las keys premium se gestionan externamente en:")
-    PremiumBox:AddLabel(Config.PremiumKeysURL)
-    PremiumBox:AddButton("Recargar Keys desde Repo", function()
+
+        if BannedHWIDs[HWID] then
+            Library:Notify("Your HWID is banned", 10)
+            sendAdvancedEmbed("❌ Banned HWID", "Intento de acceso con HWID baneado", 16711680, "Banned", "N/A")
+            return
+        end
+
         loadPremiumKeys()
-        sendWebhook({title = "Admin Action", description = "Keys premium recargadas manualmente", color = 3447003})
+
+        if Config.PremiumKeys[input] then
+            if Config.PremiumKeys[input] == HWID then
+                saveAuth(input)
+                getgenv().NYX_Level = "Premium"
+                premiumAuthSequence(false)
+                sendAdvancedEmbed("🔐 New Login Detected", "Premium access granted", 65280, "Premium", input, {{name = "🔑 Key Used", value = "`"..input.."`", inline = false}})
+                task.wait(2)
+                loadScript(true)
+            else
+                Library:Notify("Key belongs to another HWID. Access denied", 10)
+                sendAdvancedEmbed("🚫 Key Shared Detected", "Usuario intentó usar key premium de otro HWID (compartida)", 16711680, "Invalid", input, {
+                    {name = "⚠️ Key Attempted", value = "`"..input.."`", inline = false},
+                    {name = "👤 Registered HWID", value = "`"..Config.PremiumKeys[input].."`", inline = false},
+                    {name = "👤 Attempting HWID", value = "`"..HWID.."`", inline = false}
+                })
+            end
+            return
+        end
+
+        local clean = input:gsub("[%s%-%.]", ""):upper()
+        if clean == Config.PublicKeyClean and isPublicValid() then
+            getgenv().NYX_Level = "Freemium"
+            sendAdvancedEmbed("🔐 New Login Detected", "Freemium access with public key", 3447003, "Freemium", "Public")
+            Library:Notify("Freemium activated", 8)
+            task.wait(1.5)
+            loadScript(false)
+            return
+        end
+
+        Library:Notify("Invalid or expired key", 8)
+        sendAdvancedEmbed("❌ Invalid Key", "Key inválida, expirada o no existente", 16711680, "None", input, {{name = "❌ Key Entered", value = "`"..input.."`", inline = false}})
     end)
-    local PremiumListLabel = PremiumBox:AddLabel("Cargando keys...")
-    RunService.Heartbeat:Connect(function()
-        if Library.Unloaded then return end
-        loadPremiumKeys()  -- Recarga frecuente para el admin
-        local list = "Keys Premium Activas:\n"
-        for k, v in pairs(Config.PremiumKeys) do list = list .. k .. " → " .. v .. "\n" end
-        PremiumListLabel:SetText(#Config.PremiumKeys == 0 and "Ninguna key registrada" or list)
-    end)
-    -- Herramientas Admin
-    local ToolsBox = AdminTab:AddRightGroupbox("Herramientas Admin", "tools")
-    ToolsBox:AddButton("Resetear Config", function()
-        Config.PublicKeyRaw = DEFAULT_CONFIG.PublicKeyRaw
-        Config.PublicKeyClean = Config.PublicKeyRaw:gsub("[%s%-%.]", ""):upper()
-        Config.StartDate = DEFAULT_CONFIG.StartDate
-        Config.EndDate = DEFAULT_CONFIG.EndDate
-        START_TIME = parseDate(Config.StartDate)
-        END_TIME = parseDate(Config.EndDate)
-        PublicKeyEnabled = true
-        sendWebhook({title = "Admin Action", description = "Config reseteada a default", color = 3447003})
-    end)
-    ToolsBox:AddButton("Desbanear Todos", function()
-        BannedHWIDs = {}
-        sendWebhook({title = "Admin Action", description = "Todos los HWID desbaneados", color = 65280})
-    end)
-    ToolsBox:AddButton("Recargar Script", function()
-        loadScript(true)
-    end)
-    ToolsBox:AddButton("Cerrar GUI", function()
+
+    AuthBox:AddButton("Close Manually", function()
+        sendAdvancedEmbed("🔴 Manual Close", "Cierre manual de la UI", 10181046, getgenv().NYX_Level or "None", "N/A")
         Library:Unload()
     end)
-    -- Baneos HWID
-    local BanBox = AdminTab:AddRightGroupbox("Baneos HWID", "ban")
-    local BanInput = BanBox:AddInput("BanHWID", {Text = "HWID", Placeholder = "Pega HWID"})
-    BanBox:AddButton("Banear HWID", function()
-        local hwid = BanInput.Value
-        if hwid ~= "" then
-            BannedHWIDs[hwid] = true
-            sendWebhook({title = "Admin Action", description = "HWID baneado: "..hwid, color = 16711680})
-            BanInput:SetValue("")
+
+    AuthBox:AddButton("Join Discord", function()
+        pcall(function()
+            request({Url = "http://127.0.0.1:6463/rpc?v=1", Method = "POST", Headers = {["Content-Type"] = "application/json", ["Origin"] = "https://discord.com"},
+                Body = HttpService:JSONEncode({cmd = "INVITE_BROWSER", args = {code = DISCORD_INVITE}, nonce = HttpService:GenerateGUID(false)})})
+        end)
+        setclipboard("https://discord.gg/" .. DISCORD_INVITE)
+        Library:Notify("Discord invite copied / opening", 6)
+        sendAdvancedEmbed("📩 Discord Join", "Usuario intentó unirse al servidor", 3447003, getgenv().NYX_Level or "None", "N/A")
+    end)
+
+    local HWIDBox = AuthTab:AddRightGroupbox("HWID Information", "fingerprint")
+    HWIDBox:AddButton("Copy my HWID", function()
+        setclipboard(HWID)
+        Library:Notify("HWID copied to clipboard", 8)
+        sendAdvancedEmbed("📋 HWID Copied", "Usuario copió su HWID", 3447003, getgenv().NYX_Level or "None", "N/A")
+    end)
+    HWIDBox:AddLabel("Your current HWID:")
+    HWIDBox:AddLabel(HWID)
+    HWIDBox:AddDivider()
+    HWIDBox:AddLabel("<font color='rgb(0, 255, 150)'><b>How to get Premium?</b></font>")
+    HWIDBox:AddLabel("1. Copy your HWID")
+    HWIDBox:AddLabel("2. Join Discord")
+    HWIDBox:AddLabel("3. Send your HWID")
+    HWIDBox:AddLabel("4. Buy and enjoy")
+
+    -- ==================== TAB SUGGEST ====================
+    local SuggestTab = AuthWindow:AddTab("Suggest", "lightbulb")
+    local SuggestBox = SuggestTab:AddLeftGroupbox("Send Suggestion", "message")
+
+    local SuggestInput = SuggestBox:AddInput("SuggestText", {Text = "Write your suggestion", Placeholder = "Minimum 20 characters, maximum 300..."})
+
+    SuggestBox:AddButton("Send Suggestion", function()
+        local text = SuggestInput.Value:match("^%s*(.-)%s*$")
+        local length = #text
+
+        if length < 20 then
+            Library:Notify("Suggestion too short (min 20 characters)", 6)
+            return
         end
-    end)
-    BanBox:AddButton("Desbanear HWID", function()
-        local hwid = BanInput.Value
-        if hwid ~= "" then
-            BannedHWIDs[hwid] = nil
-            sendWebhook({title = "Admin Action", description = "HWID desbaneado: "..hwid, color = 65280})
-            BanInput:SetValue("")
+
+        if length > 300 then
+            Library:Notify("Suggestion too long (max 300 characters)", 6)
+            return
         end
+
+        sendAdvancedEmbed("💡 New Suggestion", "Usuario envió una sugerencia", 16776960, getgenv().NYX_Level or "None", "N/A", {
+            {name = "📝 Suggestion", value = text, inline = false}
+        })
+
+        Library:Notify("Suggestion sent successfully!", 8)
+        SuggestInput:SetValue("")
     end)
-    local BannedLabel = BanBox:AddLabel("Ningún HWID baneado")
-    RunService.Heartbeat:Connect(function()
-        if Library.Unloaded then return end
-        local list = "Baneados:\n"
-        for hwid in pairs(BannedHWIDs) do list = list .. hwid .. "\n" end
-        BannedLabel:SetText(#BannedHWIDs == 0 and "Ningún HWID baneado" or list)
-    end)
-    -- Botón exclusivo Owner
-    local OwnerBox = AdminTab:AddRightGroupbox("Owner Tools", "crown")
-    OwnerBox:AddButton("Load Script Owner", function()
-        sendWebhook({title = "Owner Action", description = "Owner cargó el script manualmente", color = 16777215, fields = {{name = "HWID", value = "`"..HWID.."`"}}})
-        Library:Notify("Cargando script owner...", 5)
-        loadScript(true)
-    end)
-end
--- ==================== AUTO-LOGIN SOLO PREMIUM ====================
+
+    SuggestBox:AddLabel("Min: 20 characters | Max: 300 characters")
+end)
+
+-- ==================== AUTO-LOGIN ====================
 local savedKey = loadAuth()
 if savedKey and not BannedHWIDs[HWID] then
     getgenv().NYX_Level = "Premium"
-    ActiveUsers[HWID] = {Level = "Premium", Key = savedKey, Timestamp = os.time()}
-    sendWebhook({title = "Premium Auto-Login", description = "Login automático", color = 65280, fields = {{name = "HWID", value = "`"..HWID.."`"}}})
-    Library:Notify("Premium auto-login", 8)
-    task.wait(1.5)
+    premiumAuthSequence(true)
+    sendAdvancedEmbed("🔐 New Login Detected", "Premium Auto-Login", 65280, "Premium", savedKey, {{name = "🔄 Type", value = "Auto-Login", inline = true}})
+    task.wait(3)
     loadScript(true)
 end
--- Owner NO tiene auto-login → usa botón manual
