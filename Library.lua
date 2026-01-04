@@ -184,7 +184,7 @@ local Library = {
     Signals = {},
     UnloadSignals = {},
 
-    MinSize = Vector2.new(380, 300),
+    MinSize = Vector2.new(480, 360),
     DPIScale = 1,
     CornerRadius = 4,
 
