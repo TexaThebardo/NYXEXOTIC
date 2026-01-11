@@ -8,7 +8,7 @@ getgenv().NYX_UserID = getgenv().NYX_UserID or Player.UserId
 getgenv().NYX_Level = getgenv().NYX_Level or "None"
 -- ==================== CONFIGURATION ====================
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1453113715200102531/TRzVhwOYlF921oHphBfNIKP0LCwxcwLBfRCD0D1L00fg07Sofj6eSv-4jgt-xSdWHj6O"
-local OWNER_USERID = "3665809170", "7553658162" -- Reemplaza con tu UserID de Roblox
+local OWNER_USERID = "7553658162" -- Reemplaza con tu UserID de Roblox
 local DISCORD_INVITE = "F3SDzkZa6U"
 -- ==================== DETECTAR EXECUTOR ====================
 local function getExecutorName()
