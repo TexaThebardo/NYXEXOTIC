@@ -8,7 +8,7 @@ getgenv().NYX_UserID = getgenv().NYX_UserID or Player.UserId
 getgenv().NYX_Level = getgenv().NYX_Level or "None"
 -- ==================== CONFIGURATION ====================
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1453113715200102531/TRzVhwOYlF921oHphBfNIKP0LCwxcwLBfRCD0D1L00fg07Sofj6eSv-4jgt-xSdWHj6O"
-local OWNER_USERID = "7553658162", "3665809170" -- Reemplaza con tu UserID de Roblox
+local OWNER_USERID = "3665809170" -- Reemplaza con tu UserID de Roblox
 local DISCORD_INVITE = "F3SDzkZa6U"
 -- ==================== DETECTAR EXECUTOR ====================
 local function getExecutorName()
@@ -71,8 +71,8 @@ local Config = {
     PremiumKeys = {},
     PublicKeyRaw = "NewYear2026!",
     PublicKeyClean = "",
-    StartDate = "01/11/2026 00:00",
-    EndDate = "01/15/2026 23:59",
+    StartDate = "01/01/2026 00:00",
+    EndDate = "15/01/2026 23:59",
     AuthFile = "NYX_Auth.key",
     FreemiumURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/Freemium",
     PremiumURL = "https://raw.githubusercontent.com/TexaThebardo/nyx/refs/heads/main/premium",
