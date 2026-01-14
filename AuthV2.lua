@@ -69,10 +69,10 @@ end
 -- ==================== CONFIG ====================
 local Config = {
     PremiumKeys = {},
-    PublicKeyRaw = "NewYear2026!",
+    PublicKeyRaw = "NYX-FREEMIUM.Fix",
     PublicKeyClean = "",
-    StartDate = "01/01/2026 00:00",
-    EndDate = "15/01/2026 23:59",
+    StartDate = "15/01/2026 00:00",
+    EndDate = "20/01/2026 23:59",
     AuthFile = "NYX_Auth.key",
     FreemiumURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/Freemium",
     PremiumURL = "https://raw.githubusercontent.com/TexaThebardo/nyx/refs/heads/main/premium",
