@@ -1,18 +1,18 @@
 {
   "NYX-TEMP-1A2B-3C4D-5E6F": {
-    "UserID": "3665809170",
+    "UserID": "111111111",
     "Duration": 86400,
-    "CreatedAt": "2024-01-01T00:00:00Z",
+    "CreatedAt": "2026-01-01T00:00:00Z",
     "ActivatedAt": null,
     "ExpiresAt": null,
     "Type": "1d"
   },
   "NYX-TEMP-7G8H-9I0J-1K2L": {
-    "UserID": "9876543210",
+    "UserID": "111111111",
     "Duration": 604800,
-    "CreatedAt": "2024-01-01T00:00:00Z",
-    "ActivatedAt": "2024-01-02T12:00:00Z",
-    "ExpiresAt": "2024-01-09T12:00:00Z",
+    "CreatedAt": "2026-01-01T00:00:00Z",
+    "ActivatedAt": null,
+    "ExpiresAt": null
     "Type": "7d"
   }
 }
