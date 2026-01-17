@@ -7,7 +7,7 @@ getgenv().NYX_Authorized = getgenv().NYX_Authorized or false
 getgenv().NYX_Key = getgenv().NYX_Key or ""
 getgenv().NYX_UserID = getgenv().NYX_UserID or Player.UserId
 getgenv().NYX_Level = getgenv().NYX_Level or "None"
-getgenv().NYX_TempExpiry = getgenv().NYX_TempExpiry or nil -- Nueva variable para expiración temporal
+getgenv().NYX_TempExpiry = getgenv().NYX_TempExpiry or nil
 
 -- ==================== CONFIGURATION ====================
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1453113715200102531/TRzVhwOYlF921oHphBfNIKP0LCwxcwLBfRCD0D1L00fg07Sofj6eSv-4jgt-xSdWHj6O"
@@ -20,12 +20,12 @@ local PREMIUM_KEYS_URL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOT
 
 -- Configuración de duraciones temporales
 local TEMP_DURATIONS = {
-    ["1d"] = 86400,        -- 1 día
-    ["3d"] = 259200,       -- 3 días
-    ["7d"] = 604800,       -- 7 días
-    ["14d"] = 1209600,     -- 14 días
-    ["1w"] = 604800,       -- 1 semana
-    ["1 month"] = 2592000  -- 1 mes (aproximado)
+    ["1d"] = 86400,
+    ["3d"] = 259200,
+    ["7d"] = 604800,
+    ["14d"] = 1209600,
+    ["1w"] = 604800,
+    ["1 month"] = 2592000
 }
 
 -- ==================== DETECTAR EXECUTOR ====================
@@ -69,19 +69,16 @@ local function formatTimeRemaining(seconds)
 end
 
 local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed, extraFields)
-    -- Función para obtener la mejor URL de imagen
     local function getBestImageUrl()
         local urls = {
-            -- CDN de Roblox (más rápido y confiable)
             string.format("https://tr.rbxcdn.com/%s/150/150/AvatarHeadshot/Png", Player.UserId),
             string.format("https://tr.rbxcdn.com/%s/150/150/Avatar/Png", Player.UserId),
-            -- API de Roblox
             string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=150&height=150&format=Png", Player.UserId),
             string.format("https://www.roblox.com/bust-thumbnail/image?userId=%d&width=150&height=150&format=Png", Player.UserId),
             string.format("https://www.roblox.com/avatar-thumbnail/image?userId=%d&width=150&height=150&format=Png", Player.UserId)
         }
         
-        return urls[1]  -- Usar el CDN primero
+        return urls[1]
     end
     
     local imageUrl = getBestImageUrl()
@@ -105,7 +102,6 @@ local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
     
-    -- Campo de usuario
     table.insert(embed.fields, {
         name = "👤 Información del Usuario",
         value = "**Display:** @" .. Player.DisplayName .. 
@@ -114,7 +110,6 @@ local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed
         inline = false
     })
     
-    -- Campo de key si existe
     if keyUsed and keyUsed ~= "N/A" and keyUsed ~= "Public" and keyUsed ~= "Owner UserID" then
         table.insert(embed.fields, {
             name = "🔑 Clave Usada",
@@ -123,7 +118,6 @@ local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed
         })
     end
     
-    -- Campo de categoría
     local categoryText = ""
     if accessLevel == "Premium" then
         categoryText = "🔑 **Premium**"
@@ -143,28 +137,24 @@ local function sendAdvancedEmbed(title, description, color, accessLevel, keyUsed
         inline = true
     })
     
-    -- Campo de executor
     table.insert(embed.fields, {
         name = "⚙️ Executor",
         value = "**" .. getExecutorName() .. "**",
         inline = true
     })
     
-    -- Campo de fecha
     table.insert(embed.fields, {
         name = "⏰ Fecha y Hora",
         value = getFormattedDate(),
         inline = false
     })
     
-    -- Agregar campos extras
     if extraFields then
         for _, f in pairs(extraFields) do 
             table.insert(embed.fields, f) 
         end
     end
     
-    -- Enviar el embed
     local body = HttpService:JSONEncode({embeds = {embed}})
     
     spawn(function()
@@ -191,7 +181,7 @@ local Config = {
     StartDate = "01/01/2026 00:00",
     EndDate = "20/01/2026 23:59",
     AuthFile = "NYX_Auth.key",
-    TempAuthFile = "NYX_TempAuth.key", -- Nueva archivo para auth temporal
+    TempAuthFile = "NYX_TempAuth.key",
     FreemiumURL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/Freemium",
     PremiumURL = "https://raw.githubusercontent.com/TexaThebardo/nyx/refs/heads/main/premium",
     PremiumKeysURL = PREMIUM_KEYS_URL,
@@ -213,7 +203,21 @@ local function loadPremiumKeys()
             local jsonData = HttpService:JSONDecode(response)
             if typeof(jsonData) == "table" then 
                 Config.PremiumKeys = jsonData 
+                print("[NYX] Premium keys loaded successfully")
+                print("[NYX] Total premium keys: " .. tostring(#jsonData))
+                -- Debug: mostrar primeras 3 claves
+                local count = 0
+                for key, value in pairs(jsonData) do
+                    if count < 3 then
+                        print("[NYX] Key: " .. key .. " -> UserID: " .. value)
+                        count = count + 1
+                    end
+                end
+            else
+                print("[NYX] Error: Premium keys JSON is not a table")
             end
+        else
+            print("[NYX] Error loading premium keys from: " .. Config.PremiumKeysURL)
         end
     end)
 end
@@ -225,7 +229,11 @@ local function loadTemporaryKeys()
             local jsonData = HttpService:JSONDecode(response)
             if typeof(jsonData) == "table" then 
                 Config.TemporaryKeys = jsonData 
+                print("[NYX] Temporary keys loaded successfully")
+                print("[NYX] Total temporary keys: " .. tostring(#jsonData))
             end
+        else
+            print("[NYX] Error loading temporary keys from: " .. Config.TempKeysURL)
         end
     end)
 end
@@ -266,6 +274,53 @@ end
 
 -- ==================== USERID ====================
 local USERID = tostring(Player.UserId)
+print("[NYX] Current UserID: " .. USERID)
+print("[NYX] Username: " .. Player.Name)
+
+-- ==================== VERIFICACIÓN DE CLAVES ====================
+local function verifyPremiumKey(key, userId)
+    if Config.PremiumKeys[key] then
+        local storedUserId = tostring(Config.PremiumKeys[key])
+        local inputUserId = tostring(userId)
+        
+        print("[NYX] Verifying premium key: " .. key)
+        print("[NYX] Stored UserID: " .. storedUserId)
+        print("[NYX] Input UserID: " .. inputUserId)
+        print("[NYX] Match: " .. tostring(storedUserId == inputUserId))
+        
+        return storedUserId == inputUserId
+    end
+    print("[NYX] Key not found: " .. key)
+    return false
+end
+
+local function isUserIDInPremiumKeys(userId)
+    local inputUserId = tostring(userId)
+    print("[NYX] Searching UserID in premium keys: " .. inputUserId)
+    
+    for key, storedUserId in pairs(Config.PremiumKeys) do
+        if tostring(storedUserId) == inputUserId then
+            print("[NYX] Found UserID in key: " .. key)
+            return true, key
+        end
+    end
+    
+    print("[NYX] UserID not found in premium keys")
+    return false, nil
+end
+
+local function isUserIDInTempKeys(userId)
+    local inputUserId = tostring(userId)
+    
+    for key, keyData in pairs(Config.TemporaryKeys) do
+        if keyData.UserID and tostring(keyData.UserID) == inputUserId then
+            if keyData.ExpiresAt and os.time() < keyData.ExpiresAt then
+                return true, key
+            end
+        end
+    end
+    return false, nil
+end
 
 -- ==================== TEMPORARY KEY MANAGEMENT ====================
 local function saveTempAuth(key, expiryTime)
@@ -288,8 +343,8 @@ local function loadTempAuth()
             if decoded.expiry and os.time() < decoded.expiry then
                 return decoded.key, decoded.expiry
             else
-                -- Clave expirada, eliminar archivo
                 if delfile then delfile(Config.TempAuthFile) end
+                return nil
             end
         end
     end
@@ -301,38 +356,46 @@ local function activateTemporaryKey(key)
     
     local keyData = Config.TemporaryKeys[key]
     
-    -- Verificar si la clave ya fue activada
     if keyData.ActivatedAt then
-        -- Verificar expiración
         if keyData.ExpiresAt and os.time() > keyData.ExpiresAt then
             return false, "Key expired"
         end
     else
-        -- Primera activación
         keyData.ActivatedAt = os.time()
         keyData.ExpiresAt = os.time() + keyData.Duration
     end
     
-    -- Guardar en archivo local
     saveTempAuth(key, keyData.ExpiresAt)
     
     return true, keyData.ExpiresAt
 end
 
-local function checkTemporaryKeyExpiry()
-    if getgenv().NYX_TempExpiry then
-        local remaining = getgenv().NYX_TempExpiry - os.time()
-        if remaining <= 0 then
+local function checkTemporaryAccess()
+    if getgenv().NYX_Level == "Temporal" and getgenv().NYX_TempExpiry then
+        if os.time() >= getgenv().NYX_TempExpiry then
             getgenv().NYX_Level = "None"
             getgenv().NYX_TempExpiry = nil
             if delfile and isfile(Config.TempAuthFile) then
                 delfile(Config.TempAuthFile)
             end
-            return false
+            return false, "Tiempo expirado"
         end
-        return true, remaining
+        
+        loadTemporaryKeys()
+        local userInKeys, userKey = isUserIDInTempKeys(USERID)
+        
+        if not userInKeys then
+            getgenv().NYX_Level = "None"
+            getgenv().NYX_TempExpiry = nil
+            if delfile and isfile(Config.TempAuthFile) then
+                delfile(Config.TempAuthFile)
+            end
+            return false, "UserID removido de las claves temporales"
+        end
+        
+        return true, getgenv().NYX_TempExpiry - os.time()
     end
-    return false
+    return false, "No es temporal"
 end
 
 -- ==================== AUTH FILE (PREMIUM) ====================
@@ -354,21 +417,50 @@ local function loadAuth()
         local key, linkedUserID = data:match("^(.-)|(.+)$")
         if key and linkedUserID == USERID then
             loadPremiumKeys()
-            if Config.PremiumKeys[key] and Config.PremiumKeys[key] == USERID then 
+            
+            if verifyPremiumKey(key, USERID) then
                 return key 
             else 
-                deleteAuth() 
+                deleteAuth()
+                return nil
             end
         end
     end
     return nil
 end
 
+-- ==================== SEQUENCES ====================
+local function premiumAuthSequence(isAutoLogin)
+    local message = isAutoLogin and "Premium auto-login successful!" or "Premium key activated!"
+    Library:Notify(message, 10)
+end
+
+local function temporaryAuthSequence(expiryTime)
+    local remaining = expiryTime - os.time()
+    local timeStr = formatTimeRemaining(remaining)
+    Library:Notify("Clave Temporal Activada! Expira en: " .. timeStr, 10)
+    
+    spawn(function()
+        while getgenv().NYX_Level == "Temporal" and not Library.Unloaded do
+            local hasAccess, reason = checkTemporaryAccess()
+            if not hasAccess then
+                getgenv().NYX_Level = "None"
+                Library:Notify("¡Tu acceso temporal ha sido revocado! Razón: " .. reason, 10)
+                sendAdvancedEmbed("🔒 Temporal Access Revoked", "Temporal access was revoked", 16711680, "None", "N/A", {
+                    {name = "👤 UserID", value = "`"..USERID.."`", inline = false},
+                    {name = "📊 Reason", value = reason, inline = false}
+                })
+                break
+            end
+            task.wait(10)
+        end
+    end)
+end
+
 -- ==================== LOAD SCRIPT ====================
 local function loadScript(isPremium, isTemporal)
     task.wait(1)
     local url = isPremium and PREMIUM_URL or FREEMIUM_URL
-    -- Si es temporal, también cargar premium
     if isTemporal then
         url = PREMIUM_URL
     end
@@ -377,50 +469,6 @@ local function loadScript(isPremium, isTemporal)
     end)
     task.wait(1.2)
     if not Library.Unloaded then Library:Unload() end
-end
-
--- Y en la función de activación temporal, cambiar:
-local function temporaryAuthSequence(expiryTime)
-    local remaining = expiryTime - os.time()
-    local timeStr = formatTimeRemaining(remaining)
-    Library:Notify("Clave Temporal Activada! Expira en: " .. timeStr, 10)
-    
-    -- Actualizar información de expiración en tiempo real
-    spawn(function()
-        while getgenv().NYX_Level == "Temporal" and not Library.Unloaded do
-            if getgenv().NYX_TempExpiry then
-                local rem = getgenv().NYX_TempExpiry - os.time()
-                if rem <= 0 then
-                    Library:Notify("¡Tu clave temporal ha expirado!", 10)
-                    break
-                end
-            end
-            task.wait(30)
-        end
-    end)
-end
-
--- Y en la verificación de key temporal, asegurar que cargue premium:
-if Config.TemporaryKeys[input] then
-    -- ... validaciones ...
-    
-    if success then
-        getgenv().NYX_Level = "Temporal"
-        getgenv().NYX_TempExpiry = expiryTime
-        
-        temporaryAuthSequence(expiryTime)
-        
-        sendAdvancedEmbed("⏳ Clave Temporal Activada", "Acceso Temporal Premium concedido", 10181046, "Temporal", input, {
-            {name = "🔑 Key Usada", value = "`"..input.."`", inline = false},
-            {name = "📊 Tipo", value = keyData.Type or "Temporal", inline = true},
-            {name = "⏰ Expira", value = os.date("%d/%m/%Y %H:%M:%S", expiryTime), inline = false},
-            {name = "⏱️ Tiempo Restante", value = formatTimeRemaining(expiryTime - os.time()), inline = true}
-        })
-        
-        task.wait(2)
-        loadScript(false, true) -- true para temporal = premium
-        return
-    end
 end
 
 -- ==================== UI ====================
@@ -434,7 +482,6 @@ pcall(function()
         NotifySide = "Right"
     })
 
-    -- Timer
     task.spawn(function()
         local startTime = tick()
         repeat
@@ -461,7 +508,6 @@ pcall(function()
 
         AdminTab = AuthWindow:AddTab("Admin", "shield")
 
-        -- Ban Management
         local BanBox = AdminTab:AddLeftGroupbox("Ban Management", "ban")
         local BanInput = BanBox:AddInput("BanUserID", {Text = "UserID to ban", Placeholder = "Paste UserID here..."})
         BanBox:AddButton("Ban UserID", function()
@@ -485,7 +531,6 @@ pcall(function()
             })
         end)
 
-        -- Owner Tools
         local ToolsBox = AdminTab:AddRightGroupbox("Owner Tools", "tools")
         ToolsBox:AddButton("Reload All Keys", function()
             loadAllKeys()
@@ -504,13 +549,6 @@ pcall(function()
             sendAdvancedEmbed("🔓 Public Key Enabled", "Owner enabled public access", 65280, "Owner", "N/A")
         end)
 
-        ToolsBox:AddButton("View Temp Keys", function()
-            local count = 0
-            for _ in pairs(Config.TemporaryKeys) do count = count + 1 end
-            Library:Notify("Temporary Keys: " .. count .. " total", 8)
-        end)
-
-        -- Loader Script
         local LoaderBox = AdminTab:AddRightGroupbox("Loader Script", "upload")
         LoaderBox:AddButton("Load Premium", function()
             getgenv().NYX_Level = "Premium"
@@ -534,7 +572,7 @@ pcall(function()
         
         LoaderBox:AddButton("Load Temporal", function()
             getgenv().NYX_Level = "Temporal"
-            getgenv().NYX_TempExpiry = os.time() + 86400 -- 1 día por defecto
+            getgenv().NYX_TempExpiry = os.time() + 86400
             sendAdvancedEmbed("⏳ Owner Load Temporal", "Owner cargó Temporal manualmente", 10181046, "Owner", "Temporal")
             Library:Notify("Loading Temporal Script...", 6)
             task.wait(1)
@@ -546,28 +584,29 @@ pcall(function()
     local AuthTab = AuthWindow:AddTab("Auth", "key")
     local AuthBox = AuthTab:AddLeftGroupbox("Key Verification", "lock")
     
-    -- Labels dinámicos
     local ActiveKeyLabel = AuthBox:AddLabel("Active Key: Loading...")
     local ExpireLabel = AuthBox:AddLabel("Key Expires: Calculating...")
-    local TempExpireLabel = AuthBox:AddLabel("Temporal Expiry: None")
+    local TempExpireLabel = AuthBox:AddLabel("<font color='rgb(255, 80, 80)'>Temporal Expiry: None</font>")
 
-    -- Actualizar información de expiración temporal
     spawn(function()
         while not Library.Unloaded do
-            if getgenv().NYX_Level == "Temporal" and getgenv().NYX_TempExpiry then
-                local remaining = getgenv().NYX_TempExpiry - os.time()
-                if remaining > 0 then
-                    local timeStr = formatTimeRemaining(remaining)
-                    local color = remaining > 3600 and "rgb(0, 255, 150)" or "rgb(255, 165, 0)" -- Verde si >1h, naranja si menos
-                    if remaining < 300 then color = "rgb(255, 80, 80)" end -- Rojo si <5min
+            if getgenv().NYX_Level == "Temporal" then
+                local hasAccess, timeLeft = checkTemporaryAccess()
+                
+                if hasAccess then
+                    local timeStr = formatTimeRemaining(timeLeft)
+                    local color = timeLeft > 3600 and "rgb(0, 255, 150)" or "rgb(255, 165, 0)"
+                    if timeLeft < 300 then color = "rgb(255, 80, 80)" end
                     TempExpireLabel:SetText("Temporal Expiry: <font color='" .. color .. "'>" .. timeStr .. "</font>")
                 else
-                    TempExpireLabel:SetText("Temporal Expiry: <font color='rgb(255, 80, 80)'>Expired</font>")
+                    getgenv().NYX_Level = "None"
+                    TempExpireLabel:SetText("<font color='rgb(255, 80, 80)'>Temporal Expiry: None (Revoked)</font>")
+                    Library:Notify("Tu acceso temporal ha sido revocado", 10)
                 end
             else
-                TempExpireLabel:SetText("Temporal Expiry: None")
+                TempExpireLabel:SetText("<font color='rgb(255, 80, 80)'>Temporal Expiry: None</font>")
             end
-            task.wait(1)
+            task.wait(5)
         end
     end)
 
@@ -580,10 +619,12 @@ pcall(function()
         if tick() % 30 < 1 then loadAllKeys() end
     end)
 
-    local KeyInput = AuthBox:AddInput("KeyInput", {Text = "Enter Key", Placeholder = "NYX-XXX-XXX-XXX or NYX-TEMP-XXX-XXX-XXX"})
+    local KeyInput = AuthBox:AddInput("KeyInput", {Text = "Enter Key", Placeholder = "Enter your premium or temporal key"})
     
     AuthBox:AddButton("Verify & Load Script", function()
         local input = KeyInput.Value:match("^%s*(.-)%s*$")
+        print("[NYX] User entered key: " .. input)
+        
         if input == "" then
             Library:Notify("Please enter a key", 4)
             sendAdvancedEmbed("⚠️ Empty Key Field", "Usuario dejó el campo vacío", 16776960, "None", "N/A")
@@ -597,38 +638,11 @@ pcall(function()
 
         loadAllKeys()
 
-        -- 1. Verificar si es clave premium
-        if Config.PremiumKeys[input] then
-            if Config.PremiumKeys[input] == USERID then
-                saveAuth(input)
-                getgenv().NYX_Level = "Premium"
-                premiumAuthSequence(false)
-                sendAdvancedEmbed("🔐 New Login Detected", "Premium access granted", 65280, "Premium", input, {
-                    {name = "🔑 Key Used", value = "`"..input.."`", inline = false},
-                    {name = "📊 Type", value = "Premium Key", inline = true}
-                })
-                task.wait(2)
-                loadScript(true)
-                return
-            else
-                BannedUserIDs[USERID] = true
-                Library:Notify("Shared key detected. Your UserID has been banned.", 15)
-                sendAdvancedEmbed("🚫 Key Shared + Auto-Ban", "Usuario intentó usar key premium de otro UserID → Baneado automáticamente", 16711680, "Banned", input, {
-                    {name = "⚠️ Key Attempted", value = "`"..input.."`", inline = false},
-                    {name = "👤 Registered UserID", value = "`"..Config.PremiumKeys[input].."`", inline = false},
-                    {name = "👤 Banned UserID", value = "`"..USERID.."`", inline = false}
-                })
-                task.wait(3)
-                Library:Unload()
-                return
-            end
-        end
-
-        -- 2. Verificar si es clave temporal
+        -- 1. Verificar clave temporal
         if Config.TemporaryKeys[input] then
+            print("[NYX] Found in temporary keys")
             local keyData = Config.TemporaryKeys[input]
             
-            -- Verificar si la clave es para este usuario
             if keyData.UserID and keyData.UserID ~= USERID then
                 Library:Notify("This temporary key is not assigned to your UserID", 8)
                 sendAdvancedEmbed("❌ Invalid Temporary Key", "Clave temporal asignada a otro usuario", 16711680, "None", input, {
@@ -639,7 +653,6 @@ pcall(function()
                 return
             end
 
-            -- Activar la clave temporal
             local success, expiryTime = activateTemporaryKey(input)
             if success then
                 getgenv().NYX_Level = "Temporal"
@@ -666,7 +679,38 @@ pcall(function()
             end
         end
 
-        -- 3. Verificar clave pública (Freemium)
+        -- 2. Verificar clave premium
+        print("[NYX] Checking premium key...")
+        if verifyPremiumKey(input, USERID) then
+            print("[NYX] Premium key verified successfully!")
+            saveAuth(input)
+            getgenv().NYX_Level = "Premium"
+            premiumAuthSequence(false)
+            sendAdvancedEmbed("🔐 New Login Detected", "Premium access granted", 65280, "Premium", input, {
+                {name = "🔑 Key Used", value = "`"..input.."`", inline = false},
+                {name = "📊 Type", value = "Premium Key", inline = true}
+            })
+            task.wait(2)
+            loadScript(true)
+            return
+        else
+            -- Si la clave existe pero no es para este usuario
+            if Config.PremiumKeys[input] then
+                print("[NYX] Key exists but for different UserID")
+                BannedUserIDs[USERID] = true
+                Library:Notify("Shared key detected. Your UserID has been banned.", 15)
+                sendAdvancedEmbed("🚫 Key Shared + Auto-Ban", "Usuario intentó usar key premium de otro UserID → Baneado automáticamente", 16711680, "Banned", input, {
+                    {name = "⚠️ Key Attempted", value = "`"..input.."`", inline = false},
+                    {name = "👤 Registered UserID", value = "`"..Config.PremiumKeys[input].."`", inline = false},
+                    {name = "👤 Banned UserID", value = "`"..USERID.."`", inline = false}
+                })
+                task.wait(3)
+                Library:Unload()
+                return
+            end
+        end
+
+        -- 3. Verificar clave pública
         local clean = input:gsub("[%s%-%.]", ""):upper()
         if clean == Config.PublicKeyClean and isPublicValid() then
             getgenv().NYX_Level = "Freemium"
@@ -680,6 +724,7 @@ pcall(function()
         end
 
         -- 4. Clave inválida
+        print("[NYX] Key not found in any system")
         Library:Notify("Invalid or expired key", 8)
         sendAdvancedEmbed("❌ Invalid Key", "Key inválida, expirada o no existente", 16711680, "None", input, {
             {name = "❌ Key Entered", value = "`"..input.."`", inline = false},
@@ -702,7 +747,6 @@ pcall(function()
         sendAdvancedEmbed("📩 Discord Join", "Usuario intentó unirse al servidor", 3447003, getgenv().NYX_Level or "None", "N/A")
     end)
 
-    -- Information Box
     local UserIDBox = AuthTab:AddRightGroupbox("Account Information", "fingerprint")
     UserIDBox:AddButton("Copy my UserID", function()
         setclipboard(USERID)
@@ -713,17 +757,6 @@ pcall(function()
     UserIDBox:AddLabel(USERID)
     UserIDBox:AddLabel("Username: " .. Player.Name)
     UserIDBox:AddLabel("Display Name: " .. Player.DisplayName)
-    
-    -- Mostrar información de expiración si es temporal
-    if getgenv().NYX_Level == "Temporal" and getgenv().NYX_TempExpiry then
-        UserIDBox:AddDivider()
-        local remaining = getgenv().NYX_TempExpiry - os.time()
-        local color = remaining > 3600 and "rgb(0, 255, 150)" or "rgb(255, 165, 0)"
-        if remaining < 300 then color = "rgb(255, 80, 80)" end
-        UserIDBox:AddLabel("<font color='" .. color .. "'><b>Temporal Key Active</b></font>")
-        UserIDBox:AddLabel("Expires: " .. os.date("%d/%m/%Y %H:%M:%S", getgenv().NYX_TempExpiry))
-        UserIDBox:AddLabel("Time Left: " .. formatTimeRemaining(remaining))
-    end
     
     UserIDBox:AddDivider()
     UserIDBox:AddLabel("<font color='rgb(0, 255, 150)'><b>💰 MÉTODOS DE ACCESO PREMIUM</b></font>")
@@ -742,7 +775,6 @@ pcall(function()
     
     UserIDBox:AddLabel("<font color='rgb(255, 0, 0)'>⚠️ NO HAY REEMBOLSOS - TODAS LAS VENTAS SON FINALES</font>")
 
-    -- Suggest Tab
     local SuggestTab = AuthWindow:AddTab("Suggest", "lightbulb")
     local SuggestBox = SuggestTab:AddLeftGroupbox("Send Suggestion", "message")
     local SuggestInput = SuggestBox:AddInput("SuggestText", {Text = "Write your suggestion", Placeholder = "Minimum 20 characters, maximum 300..."})
@@ -767,29 +799,52 @@ pcall(function()
 end)
 
 -- ==================== AUTO-LOGIN ====================
--- Primero verificar clave temporal
 local tempKey, tempExpiry = loadTempAuth()
 if tempKey and tempExpiry and os.time() < tempExpiry and not BannedUserIDs[USERID] then
-    getgenv().NYX_Level = "Temporal"
-    getgenv().NYX_TempExpiry = tempExpiry
-    temporaryAuthSequence(tempExpiry)
-    sendAdvancedEmbed("⏳ Temporary Auto-Login", "Temporal access auto-login", 10181046, "Temporal", tempKey, {
-        {name = "🔄 Type", value = "Auto-Login", inline = true},
-        {name = "⏰ Expires", value = os.date("%d/%m/%Y %H:%M:%S", tempExpiry), inline = false},
-        {name = "⏱️ Time Left", value = formatTimeRemaining(tempExpiry - os.time()), inline = true}
-    })
-    task.wait(3)
-    loadScript(false, true)
--- Luego verificar clave premium
+    loadTemporaryKeys()
+    local userInKeys, userKey = isUserIDInTempKeys(USERID)
+    
+    if userInKeys then
+        getgenv().NYX_Level = "Temporal"
+        getgenv().NYX_TempExpiry = tempExpiry
+        temporaryAuthSequence(tempExpiry)
+        sendAdvancedEmbed("⏳ Temporary Auto-Login", "Temporal access auto-login", 10181046, "Temporal", tempKey, {
+            {name = "🔄 Type", value = "Auto-Login", inline = true},
+            {name = "⏰ Expires", value = os.date("%d/%m/%Y %H:%M:%S", tempExpiry), inline = false},
+            {name = "⏱️ Time Left", value = formatTimeRemaining(tempExpiry - os.time()), inline = true}
+        })
+        task.wait(3)
+        loadScript(false, true)
+    else
+        if delfile and isfile(Config.TempAuthFile) then
+            delfile(Config.TempAuthFile)
+        end
+        getgenv().NYX_Level = "None"
+        Library:Notify("Tu acceso temporal ha sido revocado", 10)
+        sendAdvancedEmbed("🔒 Temporal Access Revoked", "User removed from temporary keys", 16711680, "None", "N/A", {
+            {name = "👤 UserID", value = "`"..USERID.."`", inline = false},
+            {name = "📊 Reason", value = "Removed from TemporaryKey.json", inline = false}
+        })
+    end
 else
     local savedKey = loadAuth()
     if savedKey and not BannedUserIDs[USERID] then
-        getgenv().NYX_Level = "Premium"
-        premiumAuthSequence(true)
-        sendAdvancedEmbed("🔐 New Login Detected", "Premium Auto-Login", 65280, "Premium", savedKey, {
-            {name = "🔄 Type", value = "Auto-Login", inline = true}
-        })
-        task.wait(3)
-        loadScript(true)
+        loadPremiumKeys()
+        if verifyPremiumKey(savedKey, USERID) then
+            getgenv().NYX_Level = "Premium"
+            premiumAuthSequence(true)
+            sendAdvancedEmbed("🔐 New Login Detected", "Premium Auto-Login", 65280, "Premium", savedKey, {
+                {name = "🔄 Type", value = "Auto-Login", inline = true}
+            })
+            task.wait(3)
+            loadScript(true)
+        else
+            getgenv().NYX_Level = "None"
+            Library:Notify("Tu acceso premium ha sido revocado", 10)
+            sendAdvancedEmbed("🔒 Premium Access Revoked", "User removed from premium keys", 16711680, "None", "N/A", {
+                {name = "👤 UserID", value = "`"..USERID.."`", inline = false},
+                {name = "📊 Reason", value = "Removed from PremiumKeys.json", inline = false}
+            })
+        end
     end
 end
