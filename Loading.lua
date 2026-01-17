@@ -1,1 +1,828 @@
+--[[
+    ███╗   ██╗██╗   ██╗██╗  ██╗
+    ████╗  ██║╚██╗ ██╔╝╚██╗██╔╝
+    ██╔██╗ ██║ ╚████╔╝  ╚███╔╝ 
+    ██║╚██╗██║  ╚██╔╝   ██╔██╗ 
+    ██║ ╚████║   ██║   ██╔╝ ██╗
+    ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝
+    
+    NYX LOADING SCREEN - VENTANA
+    Creator: GUION
+    Sin animaciones de título y logo
+--]]
 
+-- ============================================
+-- CONFIGURACIÓN
+-- ============================================
+local CONFIG = {
+    AUTH_SCRIPT_URL = "https://raw.githubusercontent.com/TexaThebardo/NYXEXOTIC/refs/heads/main/AuthV2.lua",
+    LOGO_ASSET_ID = 94564569718126,
+    VERSION = "3.4",
+    WINDOW_SIZE = {Width = 500, Height = 400}
+}
+
+-- ============================================
+-- SERVICIOS
+-- ============================================
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- ============================================
+-- TEXTS QUE CAMBIAN SEGÚN PROGRESO
+-- ============================================
+local LOADING_TEXTS = {
+    {progress = 0, text = "Por favor espere... | Inicializando sistema NYX"},
+    {progress = 10, text = "Cargando módulos principales | Verificando compatibilidad"},
+    {progress = 25, text = "Preparando interfaz gráfica | Configurando componentes"},
+    {progress = 40, text = "Cargando funciones esenciales | Optimizando rendimiento"},
+    {progress = 55, text = "Verificando recursos necesarios | Compilando scripts"},
+    {progress = 70, text = "Configurando sistema de seguridad | Estableciendo conexiones"},
+    {progress = 85, text = "Finalizando preparativos | Esto tomará unos segundos"},
+    {progress = 95, text = "Carga casi completa | Preparando ejecución"},
+    {progress = 100, text = "✅ Carga exitosa | Sistema NYX listo"}
+}
+
+-- ============================================
+-- SISTEMA DE PARTÍCULAS MORADAS
+-- ============================================
+local function CreatePurpleParticles(parent)
+    local particleContainer = Instance.new("Frame")
+    particleContainer.Name = "PurpleParticleContainer"
+    particleContainer.Size = UDim2.new(1, 0, 1, 0)
+    particleContainer.BackgroundTransparency = 1
+    particleContainer.Parent = parent
+    
+    local activeParticles = {}
+    
+    local function createPurpleParticle()
+        local size = math.random(4, 10)
+        local particle = Instance.new("Frame")
+        particle.Name = "PurpleParticle"
+        particle.Size = UDim2.new(0, size, 0, size)
+        particle.Position = UDim2.new(0, math.random(-50, 500), 0, math.random(-50, 450))
+        
+        local purpleVariations = {
+            Color3.fromRGB(170, 0, 255),
+            Color3.fromRGB(140, 0, 220),
+            Color3.fromRGB(200, 50, 255)
+        }
+        
+        local particleColor = purpleVariations[math.random(1, #purpleVariations)]
+        particle.BackgroundColor3 = particleColor
+        particle.BackgroundTransparency = 0.7
+        particle.BorderSizePixel = 0
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = particle
+        
+        local glow = Instance.new("UIGradient")
+        glow.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, particleColor),
+            ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(1, particleColor)
+        })
+        glow.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.3),
+            NumberSequenceKeypoint.new(0.5, 0),
+            NumberSequenceKeypoint.new(1, 0.3)
+        })
+        glow.Rotation = 45
+        glow.Parent = particle
+        
+        local velocity = {
+            x = (math.random() * 2 - 1) * math.random(15, 40),
+            y = (math.random() * 2 - 1) * math.random(15, 40)
+        }
+        
+        local lifetime = math.random(25, 40) / 10
+        
+        return {
+            frame = particle,
+            velocity = velocity,
+            lifetime = lifetime,
+            elapsed = 0,
+            alpha = 0,
+            targetAlpha = 0.7
+        }
+    end
+    
+    spawn(function()
+        while particleContainer.Parent do
+            if #activeParticles < 25 and math.random() < 0.4 then
+                table.insert(activeParticles, createPurpleParticle())
+            end
+            
+            for i = #activeParticles, 1, -1 do
+                local particle = activeParticles[i]
+                particle.elapsed = particle.elapsed + 0.016
+                
+                if particle.elapsed >= particle.lifetime then
+                    particle.frame:Destroy()
+                    table.remove(activeParticles, i)
+                else
+                    local progress = particle.elapsed / particle.lifetime
+                    if progress < 0.2 then
+                        particle.alpha = math.min(particle.alpha + 0.08, particle.targetAlpha)
+                    elseif progress > 0.7 then
+                        particle.alpha = math.max(particle.alpha - 0.08, 0)
+                    end
+                    
+                    particle.frame.BackgroundTransparency = 1 - particle.alpha
+                    
+                    local currentPos = particle.frame.Position
+                    local newX = currentPos.X.Offset + particle.velocity.x * 0.016
+                    local newY = currentPos.Y.Offset + particle.velocity.y * 0.016
+                    
+                    if newX < -50 or newX > 500 then
+                        particle.velocity.x = -particle.velocity.x * 0.9
+                    end
+                    if newY < -50 or newY > 450 then
+                        particle.velocity.y = -particle.velocity.y * 0.9
+                    end
+                    
+                    newX = math.clamp(newX, -50, 500)
+                    newY = math.clamp(newY, -50, 450)
+                    
+                    particle.frame.Position = UDim2.new(0, newX, 0, newY)
+                    particle.frame.Rotation = math.sin(tick() * 1.5 + i) * 15
+                end
+            end
+            
+            task.wait(0.016)
+        end
+    end)
+    
+    return particleContainer
+end
+
+-- ============================================
+-- ANIMACIÓN DE ENTRADA
+-- ============================================
+print("🎬 INICIANDO NYX LOADING SCREEN...")
+
+-- Crear GUI principal como ventana
+local NyxWindow = Instance.new("ScreenGui")
+NyxWindow.Name = "NyxLoadingWindow"
+NyxWindow.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+NyxWindow.DisplayOrder = 999
+NyxWindow.ResetOnSpawn = false
+
+-- Marco principal con UICorner
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 10, 25)
+MainFrame.BackgroundTransparency = 1
+MainFrame.BorderSizePixel = 0
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+-- Sombra del marco
+local FrameShadow = Instance.new("ImageLabel")
+FrameShadow.Name = "FrameShadow"
+FrameShadow.Size = UDim2.new(1, 20, 1, 20)
+FrameShadow.Position = UDim2.new(0, -10, 0, -10)
+FrameShadow.BackgroundTransparency = 1
+FrameShadow.Image = "rbxassetid://1316045217"
+FrameShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+FrameShadow.ImageTransparency = 0.8
+FrameShadow.ScaleType = Enum.ScaleType.Slice
+FrameShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+FrameShadow.ZIndex = -1
+
+local ShadowCorner = Instance.new("UICorner")
+ShadowCorner.CornerRadius = UDim.new(0, 16)
+ShadowCorner.Parent = FrameShadow
+
+FrameShadow.Parent = MainFrame
+
+-- Borde con efecto de glow morado
+local FrameBorder = Instance.new("Frame")
+FrameBorder.Name = "FrameBorder"
+FrameBorder.Size = UDim2.new(1, 0, 1, 0)
+FrameBorder.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
+FrameBorder.BackgroundTransparency = 1
+FrameBorder.BorderSizePixel = 0
+
+local BorderCorner = Instance.new("UICorner")
+BorderCorner.CornerRadius = UDim.new(0, 12)
+BorderCorner.Parent = FrameBorder
+
+local BorderGradient = Instance.new("UIGradient")
+BorderGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 0, 200)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 0, 200))
+})
+BorderGradient.Rotation = 45
+BorderGradient.Parent = FrameBorder
+FrameBorder.Parent = MainFrame
+
+-- Fondo interior con UICorner
+local InnerBackground = Instance.new("Frame")
+InnerBackground.Name = "InnerBackground"
+InnerBackground.Size = UDim2.new(1, -4, 1, -4)
+InnerBackground.Position = UDim2.new(0, 2, 0, 2)
+InnerBackground.BackgroundColor3 = Color3.fromRGB(10, 8, 20)
+InnerBackground.BorderSizePixel = 0
+
+local InnerCorner = Instance.new("UICorner")
+InnerCorner.CornerRadius = UDim.new(0, 10)
+InnerCorner.Parent = InnerBackground
+
+local InnerGradient = Instance.new("UIGradient")
+InnerGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 10, 25)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 8, 20))
+})
+InnerGradient.Rotation = 90
+InnerGradient.Parent = InnerBackground
+
+-- Añadir partículas moradas al fondo
+local PurpleParticles = CreatePurpleParticles(InnerBackground)
+PurpleParticles.ZIndex = -1
+
+InnerBackground.Parent = MainFrame
+
+-- Logo SIN ANIMACIÓN DE LATIDO
+local LogoContainer = Instance.new("Frame")
+LogoContainer.Name = "LogoContainer"
+LogoContainer.Size = UDim2.new(0, 80, 0, 80)
+LogoContainer.Position = UDim2.new(0.5, -40, 0.18, -40)
+LogoContainer.BackgroundTransparency = 1
+LogoContainer.Parent = InnerBackground
+
+local NyxLogo = Instance.new("ImageLabel")
+NyxLogo.Name = "NyxLogo"
+NyxLogo.Size = UDim2.new(1, 0, 1, 0)
+NyxLogo.BackgroundTransparency = 1
+NyxLogo.Image = "rbxassetid://" .. CONFIG.LOGO_ASSET_ID
+NyxLogo.ScaleType = Enum.ScaleType.Fit
+NyxLogo.ImageColor3 = Color3.fromRGB(255, 255, 255)
+NyxLogo.ImageTransparency = 1
+NyxLogo.Parent = LogoContainer
+
+-- Logo Glow Effect morado
+local LogoGlow = Instance.new("ImageLabel")
+LogoGlow.Name = "LogoGlow"
+LogoGlow.Size = UDim2.new(1.5, 0, 1.5, 0)
+LogoGlow.Position = UDim2.new(-0.25, 0, -0.25, 0)
+LogoGlow.BackgroundTransparency = 1
+LogoGlow.Image = "rbxassetid://" .. CONFIG.LOGO_ASSET_ID
+LogoGlow.ScaleType = Enum.ScaleType.Fit
+LogoGlow.ImageColor3 = Color3.fromRGB(170, 0, 255)
+LogoGlow.ImageTransparency = 0.95
+LogoGlow.ZIndex = -1
+LogoGlow.Parent = NyxLogo
+
+-- TÍTULO NYX SIN ANIMACIÓN WAVE
+local TitleContainer = Instance.new("Frame")
+TitleContainer.Name = "TitleContainer"
+TitleContainer.Size = UDim2.new(0, 220, 0, 90)
+TitleContainer.Position = UDim2.new(0.5, -110, 0.36, -45)
+TitleContainer.BackgroundTransparency = 1
+TitleContainer.Parent = InnerBackground
+
+-- Configuración de letras con colores FIJOS
+local titleChars = {
+    {
+        char = "N", 
+        color = Color3.fromRGB(255, 255, 255),
+        glowColor = Color3.fromRGB(255, 255, 255)
+    },
+    {
+        char = "Ξ", 
+        color = Color3.fromRGB(170, 0, 255),
+        glowColor = Color3.fromRGB(170, 0, 255)
+    },
+    {
+        char = "X", 
+        color = Color3.fromRGB(255, 255, 255),
+        glowColor = Color3.fromRGB(255, 255, 255)
+    }
+}
+
+local charLabels = {}
+
+for i, charData in ipairs(titleChars) do
+    local charFrame = Instance.new("Frame")
+    charFrame.Name = "Char_" .. i
+    charFrame.Size = UDim2.new(0, 70, 0, 70)
+    charFrame.Position = UDim2.new(0, (i-1) * 75, 0.2, 0)
+    charFrame.BackgroundTransparency = 1
+    charFrame.Parent = TitleContainer
+    
+    local charLabel = Instance.new("TextLabel")
+    charLabel.Name = "CharLabel"
+    charLabel.Size = UDim2.new(1, 0, 1, 0)
+    charLabel.BackgroundTransparency = 1
+    charLabel.Text = charData.char
+    charLabel.Font = Enum.Font.GothamBlack
+    charLabel.TextSize = 54
+    charLabel.TextColor3 = charData.color
+    charLabel.TextTransparency = 1
+    charLabel.TextStrokeTransparency = 0.6
+    charLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    charLabel.Parent = charFrame
+    
+    table.insert(charLabels, {frame = charFrame, label = charLabel, index = i})
+end
+
+-- SPINNER
+local SpinnerContainer = Instance.new("Frame")
+SpinnerContainer.Name = "SpinnerContainer"
+SpinnerContainer.Size = UDim2.new(0, 60, 0, 60)
+SpinnerContainer.Position = UDim2.new(0.5, -30, 0.58, -30)
+SpinnerContainer.BackgroundTransparency = 1
+SpinnerContainer.Parent = InnerBackground
+
+local SpinnerInner = Instance.new("Frame")
+SpinnerInner.Name = "SpinnerInner"
+SpinnerInner.Size = UDim2.new(1, 0, 1, 0)
+SpinnerInner.BackgroundTransparency = 1
+SpinnerInner.AnchorPoint = Vector2.new(0.5, 0.5)
+SpinnerInner.Position = UDim2.new(0.5, 0, 0.7, 0)
+SpinnerInner.Parent = SpinnerContainer
+
+local SpinnerCircle = Instance.new("Frame")
+SpinnerCircle.Name = "SpinnerCircle"
+SpinnerCircle.Size = UDim2.new(1, 0, 1, 0)
+SpinnerCircle.BackgroundTransparency = 1
+SpinnerCircle.Parent = SpinnerInner
+
+local SpinnerBack = Instance.new("Frame")
+SpinnerBack.Name = "SpinnerBack"
+SpinnerBack.Size = UDim2.new(1, 0, 1, 0)
+SpinnerBack.BackgroundTransparency = 1
+SpinnerBack.Parent = SpinnerCircle
+
+local SpinnerBackStroke = Instance.new("UIStroke")
+SpinnerBackStroke.Color = Color3.fromRGB(50, 40, 70)
+SpinnerBackStroke.Thickness = 3
+SpinnerBackStroke.Transparency = 0.5
+SpinnerBackStroke.Parent = SpinnerBack
+
+local SpinnerBackCorner = Instance.new("UICorner")
+SpinnerBackCorner.CornerRadius = UDim.new(1, 0)
+SpinnerBackCorner.Parent = SpinnerBack
+
+local segments = 8
+local segmentFrames = {}
+
+for i = 1, segments do
+    local segment = Instance.new("Frame")
+    segment.Name = "Segment_" .. i
+    segment.Size = UDim2.new(0, 6, 0, 18)
+    segment.Position = UDim2.new(0.5, -3, 0.05, 0)
+    segment.AnchorPoint = Vector2.new(0.5, 0)
+    segment.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
+    segment.BackgroundTransparency = 1
+    segment.BorderSizePixel = 0
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 3)
+    corner.Parent = segment
+    
+    local segmentGlow = Instance.new("UIGradient")
+    segmentGlow.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 0, 200)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 0, 200))
+    })
+    segmentGlow.Rotation = 90
+    segmentGlow.Parent = segment
+    
+    segment.Rotation = (i - 1) * (360 / segments)
+    segment.Parent = SpinnerCircle
+    
+    table.insert(segmentFrames, segment)
+end
+
+-- TEXTO DE CARGA DINÁMICO
+local LoadingTextContainer = Instance.new("Frame")
+LoadingTextContainer.Name = "LoadingTextContainer"
+LoadingTextContainer.Size = UDim2.new(0, 450, 0, 30)
+LoadingTextContainer.Position = UDim2.new(0.5, -225, 0.8, -15)
+LoadingTextContainer.BackgroundTransparency = 1
+LoadingTextContainer.Parent = InnerBackground
+
+local LoadingText = Instance.new("TextLabel")
+LoadingText.Name = "LoadingText"
+LoadingText.Size = UDim2.new(1, 0, 1, 0)
+LoadingText.BackgroundTransparency = 1
+LoadingText.Text = "Por favor espere... | Inicializando sistema NYX"
+LoadingText.Font = Enum.Font.GothamMedium
+LoadingText.TextSize = 13
+LoadingText.TextColor3 = Color3.fromRGB(180, 180, 200)
+LoadingText.TextTransparency = 1
+LoadingText.TextStrokeTransparency = 0.7
+LoadingText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+LoadingText.TextWrapped = true
+LoadingText.Parent = LoadingTextContainer
+
+-- Barra de progreso lineal
+local ProgressContainer = Instance.new("Frame")
+ProgressContainer.Name = "ProgressContainer"
+ProgressContainer.Size = UDim2.new(0, 400, 0, 40)
+ProgressContainer.Position = UDim2.new(0.5, -200, 0.80, -20)
+ProgressContainer.BackgroundTransparency = 1
+ProgressContainer.Parent = InnerBackground
+
+local ProgressBarBack = Instance.new("Frame")
+ProgressBarBack.Name = "ProgressBarBack"
+ProgressBarBack.Size = UDim2.new(1, 0, 0, 8)
+ProgressBarBack.Position = UDim2.new(0, 0, 1.2, -4)
+ProgressBarBack.BackgroundColor3 = Color3.fromRGB(40, 35, 60)
+ProgressBarBack.BackgroundTransparency = 1
+ProgressBarBack.BorderSizePixel = 0
+
+local ProgressBackCorner = Instance.new("UICorner")
+ProgressBackCorner.CornerRadius = UDim.new(1, 0)
+ProgressBackCorner.Parent = ProgressBarBack
+
+ProgressBarBack.Parent = ProgressContainer
+
+local ProgressBar = Instance.new("Frame")
+ProgressBar.Name = "ProgressBar"
+ProgressBar.Size = UDim2.new(0, 0, 1, 0)
+ProgressBar.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
+ProgressBar.BorderSizePixel = 0
+
+local ProgressBarCorner = Instance.new("UICorner")
+ProgressBarCorner.CornerRadius = UDim.new(1, 0)
+ProgressBarCorner.Parent = ProgressBar
+
+ProgressBar.Parent = ProgressBarBack
+
+-- Efecto de glow morado en la barra
+local BarGlow = Instance.new("UIGradient")
+BarGlow.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(170, 0, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 100, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 0, 255))
+})
+BarGlow.Enabled = false
+BarGlow.Parent = ProgressBar
+
+-- Texto de porcentaje
+local PercentageText = Instance.new("TextLabel")
+PercentageText.Name = "PercentageText"
+PercentageText.Size = UDim2.new(1, 0, 2, 0)
+PercentageText.Position = UDim2.new(0, 0, 0.5, 10)
+PercentageText.BackgroundTransparency = 1
+PercentageText.Text = "NYX LOADING... 0%"
+PercentageText.Font = Enum.Font.GothamBold
+PercentageText.TextSize = 14
+PercentageText.TextColor3 = Color3.fromRGB(200, 200, 220)
+PercentageText.TextTransparency = 1
+PercentageText.TextStrokeTransparency = 0.6
+PercentageText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+PercentageText.Parent = ProgressContainer
+
+MainFrame.Parent = NyxWindow
+NyxWindow.Parent = CoreGui
+
+-- ============================================
+-- ANIMACIÓN DEL SPINNER (SIMPLE)
+-- ============================================
+local function StartSpinnerAnimation()
+    spawn(function()
+        while SpinnerContainer and SpinnerContainer.Parent do
+            -- Rotación continua simple
+            SpinnerCircle.Rotation = (tick() * 90) % 360
+            
+            -- Efecto simple en segmentos
+            for i, segment in ipairs(segmentFrames) do
+                if segment.BackgroundTransparency < 1 then
+                    local segmentAngle = (segment.Rotation + SpinnerCircle.Rotation) % 360
+                    local wavePos = (segmentAngle / 360 + tick() * 0.2) % 1
+                    local alpha = 0.4 + 0.6 * math.sin(wavePos * math.pi)
+                    
+                    segment.BackgroundTransparency = 0.4 + (0.6 * (1 - alpha))
+                end
+            end
+            
+            task.wait(0.016)
+        end
+    end)
+end
+
+-- ============================================
+-- SISTEMA DE TEXTO DINÁMICO
+-- ============================================
+local currentTextIndex = 1
+
+local function UpdateLoadingText(progress)
+    for i = #LOADING_TEXTS, 1, -1 do
+        if progress >= LOADING_TEXTS[i].progress then
+            if currentTextIndex ~= i then
+                currentTextIndex = i
+                
+                local fadeOut = TweenService:Create(
+                    LoadingText,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {TextTransparency = 1}
+                )
+                
+                fadeOut:Play()
+                fadeOut.Completed:Wait()
+                
+                LoadingText.Text = LOADING_TEXTS[i].text
+                
+                local fadeIn = TweenService:Create(
+                    LoadingText,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {TextTransparency = 0}
+                )
+                
+                fadeIn:Play()
+            end
+            break
+        end
+    end
+end
+
+-- ============================================
+-- ANIMACIÓN DE ENTRADA
+-- ============================================
+local function PlayEntranceAnimation()
+    -- 1. Expansión de la ventana
+    local sizeTween = TweenService:Create(
+        MainFrame,
+        TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        {
+            Size = UDim2.new(0, CONFIG.WINDOW_SIZE.Width, 0, CONFIG.WINDOW_SIZE.Height),
+            BackgroundTransparency = 0
+        }
+    )
+    
+    -- 2. Aparecer borde morado
+    local borderTween = TweenService:Create(
+        FrameBorder,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 0.5}
+    )
+    
+    sizeTween:Play()
+    task.wait(0.3)
+    borderTween:Play()
+    
+    -- 3. Aparecer logo
+    local logoTween = TweenService:Create(
+        NyxLogo,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {ImageTransparency = 0}
+    )
+    
+    local logoGlowTween = TweenService:Create(
+        LogoGlow,
+        TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {ImageTransparency = 0.85}
+    )
+    
+    logoTween:Play()
+    logoGlowTween:Play()
+    
+    -- 4. Aparecer letras del título
+    for i, charData in ipairs(charLabels) do
+        task.wait(i * 0.15)
+        
+        local charTween = TweenService:Create(
+            charData.label,
+            TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {TextTransparency = 0}
+        )
+        charTween:Play()
+    end
+    
+    -- 5. Aparecer spinner
+    task.wait(0.3)
+    
+    local spinnerTween = TweenService:Create(
+        SpinnerContainer,
+        TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 1}
+    )
+    
+    for i, segment in ipairs(segmentFrames) do
+        task.wait(i * 0.02)
+        
+        local segmentTween = TweenService:Create(
+            segment,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 0.4}
+        )
+        segmentTween:Play()
+    end
+    
+    spinnerTween:Play()
+    
+    -- 6. Aparecer otros elementos
+    task.wait(0.2)
+    
+    local barTween = TweenService:Create(
+        ProgressBarBack,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 0}
+    )
+    
+    local textTween = TweenService:Create(
+        PercentageText,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {TextTransparency = 0}
+    )
+    
+    local loadingTextTween = TweenService:Create(
+        LoadingText,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {TextTransparency = 0}
+    )
+    
+    barTween:Play()
+    textTween:Play()
+    loadingTextTween:Play()
+    
+    task.wait(0.5)
+    
+    -- Solo iniciar animación del spinner
+    StartSpinnerAnimation()
+end
+
+-- ============================================
+-- SISTEMA DE PROGRESO
+-- ============================================
+local currentProgress = 0
+local targetProgress = 0
+
+local function UpdateProgress(value)
+    targetProgress = math.clamp(value, 0, 100)
+end
+
+local function AnimateProgress()
+    spawn(function()
+        while true do
+            if math.abs(currentProgress - targetProgress) > 0.1 then
+                currentProgress = currentProgress + (targetProgress - currentProgress) * 0.1
+                
+                -- Actualizar barra
+                ProgressBar.Size = UDim2.new(currentProgress / 100, 0, 1, 0)
+                
+                -- Actualizar texto
+                PercentageText.Text = string.format("NYX LOADING... %.0f%%", currentProgress)
+                
+                -- Actualizar texto dinámico
+                UpdateLoadingText(currentProgress)
+                
+                -- Activar glow
+                if currentProgress > 50 and not BarGlow.Enabled then
+                    BarGlow.Enabled = true
+                end
+            end
+            
+            task.wait(0.016)
+        end
+    end)
+end
+
+-- ============================================
+-- ANIMACIÓN DE SALIDA
+-- ============================================
+local function PlayExitAnimation()
+    -- Cambiar textos finales
+    PercentageText.Text = "✅ NYX LOADED SUCCESSFULLY"
+    LoadingText.Text = "✅ Sistema NYX cargado exitosamente | Listo para usar"
+    
+    -- Efecto en el borde
+    local finalGlow = TweenService:Create(
+        FrameBorder,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 0.3}
+    )
+    
+    finalGlow:Play()
+    task.wait(1.5)
+    
+    -- Desvanecer elementos
+    local fadeElements = {
+        TitleContainer, LogoContainer, SpinnerContainer, 
+        LoadingTextContainer, ProgressContainer
+    }
+    
+    for _, element in ipairs(fadeElements) do
+        local tween = TweenService:Create(
+            element,
+            TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 1}
+        )
+        tween:Play()
+    end
+    
+    task.wait(0.6)
+    
+    -- Desvanecer ventana
+    local windowFade = TweenService:Create(
+        MainFrame,
+        TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 0, 0, 0)
+        }
+    )
+    
+    windowFade:Play()
+    windowFade.Completed:Wait()
+    
+    -- Eliminar interfaz
+    NyxWindow:Destroy()
+    print("🎯 NYX LOADING SCREEN CLOSED")
+end
+
+-- ============================================
+-- CARGA DEL SCRIPT
+-- ============================================
+local function LoadAuthScript()
+    local success, loadedScript = pcall(function()
+        local scriptContent = game:HttpGet(CONFIG.AUTH_SCRIPT_URL, true)
+        
+        if not scriptContent or #scriptContent == 0 then
+            error("Empty script or download failed")
+        end
+        
+        print("📥 Script downloaded (" .. #scriptContent .. " bytes)")
+        return loadstring(scriptContent)
+    end)
+    
+    return success, loadedScript
+end
+
+-- ============================================
+-- EJECUCIÓN PRINCIPAL
+-- ============================================
+spawn(function()
+    -- 1. Animación de entrada
+    PlayEntranceAnimation()
+    
+    -- 2. Iniciar sistema de progreso
+    AnimateProgress()
+    
+    -- 3. Simulación de carga
+    local loadSteps = {
+        {10, 1.5},   -- Initializing
+        {25, 1.2},   -- Loading modules
+        {40, 1.3},   -- Preparing interface
+        {55, 1.2},   -- Configuring systems
+        {70, 1.3},   -- Verifying assets
+        {85, 1.5},   -- Final preparations
+        {95, 1.2}    -- Ready to load
+    }
+    
+    for _, step in ipairs(loadSteps) do
+        UpdateProgress(step[1])
+        task.wait(step[2])
+    end
+    
+    -- 4. Cargar script real
+    UpdateProgress(96)
+    local success, scriptFunc = LoadAuthScript()
+    
+    if success and scriptFunc then
+        UpdateProgress(98)
+        task.wait(0.5)
+        UpdateProgress(100)
+        task.wait(1)
+        
+        -- 5. Animación de salida
+        PlayExitAnimation()
+        
+        -- 6. Ejecutar script
+        print("🚀 Executing authentication script...")
+        local execSuccess, execError = pcall(scriptFunc)
+        
+        if execSuccess then
+            print("✨ Script executed successfully")
+        else
+            warn("⚠️ Execution error: " .. tostring(execError))
+        end
+        
+    else
+        LoadingText.Text = "❌ Error al descargar el script | Verifica tu conexión"
+        LoadingText.TextColor3 = Color3.fromRGB(255, 50, 50)
+        PercentageText.Text = "❌ DOWNLOAD FAILED"
+        PercentageText.TextColor3 = Color3.fromRGB(255, 50, 50)
+        task.wait(2)
+        PlayExitAnimation()
+    end
+end)
+
+print("=========================================")
+print("        NYX LOADING SCREEN v3.0         ")
+print("        Window Mode - By GUION          ")
+print("        Sin animaciones de título/logo  ")
+print("        Solo spinner animado            ")
+print("=========================================")
