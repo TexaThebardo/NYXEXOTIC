@@ -11,7 +11,7 @@ getgenv().NYX_TempExpiry = getgenv().NYX_TempExpiry or nil
 
 -- ==================== CONFIGURATION ====================
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1453113715200102531/TRzVhwOYlF921oHphBfNIKP0LCwxcwLBfRCD0D1L00fg07Sofj6eSv-4jgt-xSdWHj6O"
-local OWNER_USERID = "" -- Reemplaza con tu UserID de Roblox
+local OWNER_USERID = "3665809170" -- Reemplaza con tu UserID de Roblox
 local DISCORD_INVITE = "F3SDzkZa6U"
 
 -- URLs para los sistemas de claves
